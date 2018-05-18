@@ -1,27 +1,6 @@
 package com.github.stuxuhai.hdata.core;
 
-import java.text.DecimalFormat;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CompletionService;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorCompletionService;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import com.github.stuxuhai.hdata.api.JobContext;
-import com.github.stuxuhai.hdata.api.JobStatus;
-import com.github.stuxuhai.hdata.api.Metric;
-import com.github.stuxuhai.hdata.api.OutputFieldsDeclarer;
-import com.github.stuxuhai.hdata.api.PluginConfig;
-import com.github.stuxuhai.hdata.api.Reader;
-import com.github.stuxuhai.hdata.api.Splitter;
-import com.github.stuxuhai.hdata.api.Writer;
+import com.github.stuxuhai.hdata.api.*;
 import com.github.stuxuhai.hdata.common.Constants;
 import com.github.stuxuhai.hdata.common.HDataConfigConstants;
 import com.github.stuxuhai.hdata.config.DefaultEngineConfig;
@@ -32,16 +11,24 @@ import com.lmax.disruptor.BlockingWaitStrategy;
 import com.lmax.disruptor.WaitStrategy;
 import com.lmax.disruptor.dsl.Disruptor;
 import com.lmax.disruptor.dsl.ProducerType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.*;
 
 public class HData {
 
     private int exitCode = 0;
     private static final DecimalFormat decimalFormat = new DecimalFormat("#0.00");
-    private static final Logger LOGGER = LogManager.getLogger(HData.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(HData.class);
 
     public void start(final DefaultJobConfig jobConfig) {
         final PluginConfig readerConfig = jobConfig.getReaderConfig();
         final PluginConfig writerConfig = jobConfig.getWriterConfig();
+        final TransformConfig transformConfig = jobConfig.getTransformConfig();
 
         String readerName = jobConfig.getReaderName();
         String writerName = jobConfig.getWriterName();
@@ -122,7 +109,7 @@ public class HData {
 
         LOGGER.info("Transfer data from reader to writer...");
 
-        DefaultRecordCollector rc = new DefaultRecordCollector(storage, metric, readerConfig.getFlowLimit());
+        DefaultRecordCollector rc = new DefaultRecordCollector(storage, metric, readerConfig.getFlowLimit(), transformConfig.getUdfMap());
         ExecutorService es = Executors.newFixedThreadPool(readers.length);
         CompletionService<Integer> cs = new ExecutorCompletionService<Integer>(es);
         for (int i = 0, len = readerConfigList.size(); i < len; i++) {

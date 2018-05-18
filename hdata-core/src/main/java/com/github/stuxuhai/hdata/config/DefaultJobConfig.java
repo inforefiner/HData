@@ -17,16 +17,26 @@ public class DefaultJobConfig extends JobConfig {
 
     private final PluginConfig readerConfig;
     private final PluginConfig writerConfig;
+    private final TransformConfig transformConfig;
     private final String readerName;
     private final String writerName;
     private static final long serialVersionUID = 1L;
 
-    public DefaultJobConfig(String readerName, PluginConfig readerConfig, String writerName, PluginConfig writerConfig) {
+//    public DefaultJobConfig(String readerName, PluginConfig readerConfig, String writerName, PluginConfig writerConfig) {
+//        super();
+//        this.readerName = readerName;
+//        this.readerConfig = readerConfig;
+//        this.writerName = writerName;
+//        this.writerConfig = writerConfig;
+//    }
+
+    public DefaultJobConfig(String readerName, PluginConfig readerConfig, String writerName, PluginConfig writerConfig, TransformConfig transformConfig) {
         super();
         this.readerName = readerName;
         this.readerConfig = readerConfig;
         this.writerName = writerName;
         this.writerConfig = writerConfig;
+        this.transformConfig = transformConfig;
     }
 
     @Override
@@ -79,6 +89,10 @@ public class DefaultJobConfig extends JobConfig {
         }
     }
 
+    public TransformConfig getTransformConfig() {
+        return transformConfig;
+    }
+
     public static DefaultJobConfig createFromXML(String path) {
         try {
             XMLConfiguration xmlConfig = new XMLConfiguration(path);
@@ -106,7 +120,7 @@ public class DefaultJobConfig extends JobConfig {
                 }
             }
 
-            return new DefaultJobConfig(readerName, readerPluginConfig, writerName, writerPluginConfig);
+            return new DefaultJobConfig(readerName, readerPluginConfig, writerName, writerPluginConfig, new TransformConfig());
         } catch (ConfigurationException e) {
             Throwables.propagate(e);
         }

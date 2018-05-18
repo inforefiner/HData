@@ -78,16 +78,24 @@
 	<modules>
 		<module>hdata-api</module>
 		<module>hdata-core</module>
-		<module>hdata-console</module>
-		<module>hdata-csv</module>
-		<module>hdata-jdbc</module>
-		<module>hdata-ftp</module>
+        <module>hdata-jdbc</module>
+        <module>hdata-dubbo</module>
 		<module>hdata-http</module>
-		<module>hdata-kafka</module>
-		<module>hdata-hdfs</module>
-		<module>hdata-hive</module>
-		<module>hdata-hbase</module>
-		<module>hdata-mongodb</module>
-		<module>hdata-excel</module>
-	</modules>
+        <module>hdata-console</module>
+        <module>hdata-socket</module>
+		<module>hdata-ftp</module>
+		<module>hdata-es</module>
+		<!--
+
+        <module>hdata-csv</module>
+
+
+        <module>hdata-kafka</module>
+        <module>hdata-hdfs</module>
+        <module>hdata-hive</module>
+        <module>hdata-hbase</module>
+        <module>hdata-mongodb</module>
+        <module>hdata-excel</module>
+        -->
+    </modules>
 </project>

@@ -1,0 +1,75 @@
+package com.github.stuxuhai.hdata.plugin.reader.socket;
+
+import com.github.stuxuhai.hdata.api.*;
+import com.github.stuxuhai.hdata.plugin.reader.socket.netty.Receiver;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+public class SocketReader extends Reader {
+
+    private static final Logger LOGGER = LogManager.getLogger(SocketReader.class);
+    private static final String ALL_MATCH_COLUMN = "_match_all_";
+
+    private Pattern pattern;
+    private String[] extract_columns;
+    private String ip_bind;
+    private int receiver_port;
+    private String null_string;
+    private Receiver server;
+
+    @Override
+    public void prepare(JobContext context, PluginConfig readerConfig) {
+        this.ip_bind = readerConfig.getString(SocketReaderProperties.RECEIVER_BIND, "127.0.0.1");
+        this.receiver_port = readerConfig.getInt(SocketReaderProperties.RECEIVER_PORT, 10000);
+        this.null_string = readerConfig.getString(SocketReaderProperties.NULL_STRING, "");
+        String columns = readerConfig.getString(SocketReaderProperties.EXTRACT_COLUMNS);
+        String regex = readerConfig.getString(SocketReaderProperties.EXTRACT_REGEX);
+        try {
+            this.pattern = Pattern.compile(regex);
+            this.extract_columns = columns.split(",");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        LOGGER.info("SyslogReader prepare finish, receiver port = {}, extract regex = {}, extract columns = {}, null string = {}", receiver_port, regex, columns, null_string);
+    }
+
+    @Override
+    public void execute(final RecordCollector recordCollector) {
+        server = new Receiver(ip_bind, receiver_port, new ReadListener() {
+            @Override
+            public void callback(String line) {
+                if (!line.isEmpty()) {
+                    Matcher matcher = pattern.matcher(line);
+                    if (matcher.find()) {
+                        Record record = new DefaultRecord(extract_columns.length);
+                        for (String column : extract_columns) {
+                            if (column.equalsIgnoreCase(ALL_MATCH_COLUMN)) {
+                                record.add(line);
+                            } else {
+                                String str = matcher.group(column);
+                                if (str == null) str = null_string;
+                                record.add(str);
+                            }
+                        }
+                        recordCollector.send(record);
+                    }
+                }
+            }
+        });
+        server.start();
+    }
+
+    @Override
+    public void close() {
+        super.close();
+    }
+
+    @Override
+    public Splitter newSplitter() {
+        return null;
+    }
+
+}

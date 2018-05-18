@@ -9,4 +9,8 @@ public interface Record {
 	public Object get(int index);
 
 	public int size();
+
+    public Object[] values();
+
+    public String[] strings();
 }

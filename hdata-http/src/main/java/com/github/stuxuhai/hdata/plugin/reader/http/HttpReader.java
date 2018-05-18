@@ -1,64 +1,83 @@
 package com.github.stuxuhai.hdata.plugin.reader.http;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLConnection;
-
+import com.fasterxml.jackson.databind.JsonNode;
+import com.github.stuxuhai.hdata.api.*;
+import com.github.stuxuhai.hdata.plugin.reader.http.client.GetClient;
+import com.github.stuxuhai.hdata.plugin.reader.http.client.JsonBuilder;
+import com.github.stuxuhai.hdata.plugin.reader.http.client.PostClient;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import com.github.stuxuhai.hdata.api.DefaultRecord;
-import com.github.stuxuhai.hdata.api.JobContext;
-import com.github.stuxuhai.hdata.api.PluginConfig;
-import com.github.stuxuhai.hdata.api.Reader;
-import com.github.stuxuhai.hdata.api.Record;
-import com.github.stuxuhai.hdata.api.RecordCollector;
-import com.github.stuxuhai.hdata.api.Splitter;
-import com.github.stuxuhai.hdata.exception.HDataException;
+import java.util.Iterator;
 
 public class HttpReader extends Reader {
 
-	private String urlstr = null;
-	private String encoding = null;
-	private static final Logger LOG = LogManager.getLogger(HttpReader.class);
+    private static final Logger LOG = LogManager.getLogger(HttpReader.class);
 
-	@Override
-	public void prepare(JobContext context, PluginConfig readerConfig) {
-		urlstr = readerConfig.getString(HttpReaderProperties.URL);
-		encoding = readerConfig.getString(HttpReaderProperties.ENCODING, "UTF-8");
-	}
+    private String urlstr = null;
+    private String method = null;
+    private String encoding = null;
+    private String parameters = null;
+    private String[] fields = null;
+    private String rootPath = null;
 
-	@Override
-	public void execute(RecordCollector recordCollector) {
-		URL url;
-		try {
-			url = new URL(urlstr);
-			URLConnection connection = url.openConnection();
-			BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream(), encoding));
-			String line = null;
-			while ((line = br.readLine()) != null) {
-				if (line.startsWith("offset:")) {
-					LOG.info(line);
-				} else {
-					Record record = new DefaultRecord(1);
-					record.add(line);
-					recordCollector.send(record);
-				}
-			}
-			br.close();
-		} catch (MalformedURLException e) {
-			throw new HDataException(e);
-		} catch (IOException e) {
-			throw new HDataException(e);
-		}
-	}
+    @Override
+    public void prepare(JobContext context, PluginConfig readerConfig) {
+        urlstr = readerConfig.getString(HttpReaderProperties.URL);
+        method = readerConfig.getString(HttpReaderProperties.METHOD, "GET");
+        parameters = readerConfig.getString(HttpReaderProperties.PARAMETERS);
+        encoding = readerConfig.getString(HttpReaderProperties.ENCODING, "UTF-8");
+        fields = readerConfig.getString(HttpReaderProperties.FIELDS).split(",");
+        rootPath = readerConfig.getString(HttpReaderProperties.ROOT_PATH);
+    }
 
-	@Override
-	public Splitter newSplitter() {
-		return new HttpSplitter();
-	}
+    @Override
+    public void execute(RecordCollector recordCollector) {
+        Object resp = null;
+        if ("POST".equalsIgnoreCase(method)) {
+            resp = new PostClient(urlstr).doPost(parameters).getResponse();
+        } else {
+            if (parameters != null) {
+                urlstr = urlstr + "?" + parameters;
+            }
+            resp = new GetClient(urlstr).doGet().getResponse();
+        }
 
+        JsonNode jsonNode = JsonBuilder.getInstance().fromJson(resp.toString(), JsonNode.class);
+
+        if (rootPath != null && rootPath.length() > 0) {
+            for (String path : rootPath.split("/")) {
+                jsonNode = jsonNode.findPath(path);
+            }
+        }
+
+        if (jsonNode.isArray()) {
+            Iterator<JsonNode> iterator = jsonNode.iterator();
+            while (iterator.hasNext()) {
+                JsonNode node = iterator.next();
+                Record record = new DefaultRecord(fields.length);
+                for (String field : fields) {
+                    if(field.isEmpty()){
+                        record.add("");
+                    }else {
+                        record.add(node.get(field).textValue());
+                    }
+                }
+                recordCollector.send(record);
+            }
+        }
+    }
+
+    @Override
+    public Splitter newSplitter() {
+        return new HttpSplitter();
+    }
+
+
+    public static void main(String[] args) {
+        Object resp = new GetClient("http://top.baidu.com/news/pagination?pageno=1").doGet().getResponse();
+        JsonNode jsonNode = JsonBuilder.getInstance().fromJson(resp.toString(), JsonNode.class);
+
+        System.out.println(jsonNode.isArray());
+    }
 }

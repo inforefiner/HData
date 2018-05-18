@@ -28,10 +28,10 @@ fi
 mkdir -p $HDATA_BUILD_HDATA_DIR/lib
 mkdir -p $HDATA_BUILD_HDATA_DIR/bin
 mkdir -p $HDATA_BUILD_HDATA_DIR/plugins
-cp $HDATA_HOME/bin/hdata $HDATA_BUILD_HDATA_DIR/bin/
+cp $HDATA_HOME/bin/hdata* $HDATA_BUILD_HDATA_DIR/bin/
 cp -r $HDATA_HOME/conf $HDATA_BUILD_HDATA_DIR/
 
-mvn clean package -Pcopy-dependency
+mvn clean package -Pcopy-dependency -DskipTests
 
 cp $HDATA_HOME/hdata-core/target/hdata-core-*.jar $HDATA_BUILD_HDATA_DIR/lib
 cp $HDATA_HOME/hdata-core/target/dependency/*.jar $HDATA_BUILD_HDATA_DIR/lib
@@ -43,10 +43,22 @@ for f in $HDATA_HOME/hdata-*; do
        mkdir -p $pluginDir
        cp $f/target/hdata-*.jar $pluginDir
        cp $f/target/dependency/*.jar $pluginDir
+       if [ -d  $f/lib ]; then
+        cp $f/lib/*.jar $pluginDir
+       fi
     fi
 done
 
 cd $HDATA_BUILD_DIR
-tar zcf hdata.tar.gz hdata
 
-rm -rf $HDATA_BUILD_HDATA_DIR
+EXCLUDE_LIST="csv excel hbase hdfs hive kafka mongodb"
+for i in $EXCLUDE_LIST
+do
+  echo $i
+  rm -rf $HDATA_BUILD_HDATA_DIR/plugins/$i
+done
+
+FINAL_NAME=hdata-`date +%y-%m-%d`.zip
+zip -b $HDATA_BUILD_DIR -r $FINAL_NAME hdata
+
+

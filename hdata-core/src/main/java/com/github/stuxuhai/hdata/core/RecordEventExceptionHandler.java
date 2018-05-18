@@ -1,18 +1,16 @@
 package com.github.stuxuhai.hdata.core;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import com.github.stuxuhai.hdata.api.JobContext;
 import com.google.common.base.Throwables;
 import com.lmax.disruptor.ExceptionHandler;
 import com.lmax.disruptor.dsl.Disruptor;
+import org.slf4j.LoggerFactory;
 
 public class RecordEventExceptionHandler implements ExceptionHandler<Object> {
 
     private final Disruptor<RecordEvent> disruptor;
     private final JobContext context;
-    private static Logger LOGGER = LogManager.getLogger(RecordEventExceptionHandler.class);
+    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(RecordEventExceptionHandler.class);
 
     public RecordEventExceptionHandler(Disruptor<RecordEvent> disruptor, JobContext context) {
         this.disruptor = disruptor;

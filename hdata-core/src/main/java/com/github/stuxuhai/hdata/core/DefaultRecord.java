@@ -18,6 +18,24 @@ public class DefaultRecord implements Record {
     }
 
     @Override
+    public Object[] values() {
+        return fields;
+    }
+
+    @Override
+    public String[] strings() {
+        String[] arr = new String[fields.length];
+        for(int i = 0; i < fields.length; i ++){
+            if(fields[i] != null)
+                arr[i] = fields[i].toString();
+            else{
+                arr[i] = "";
+            }
+        }
+        return arr;
+    }
+
+    @Override
     public void add(Object field) {
         add(cursor, field);
     }

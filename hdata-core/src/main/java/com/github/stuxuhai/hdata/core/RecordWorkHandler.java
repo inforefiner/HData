@@ -19,10 +19,11 @@ public class RecordWorkHandler implements WorkHandler<RecordEvent> {
         this.context = context;
         this.writerConfig = writerConfig;
         this.metric = context.getMetric();
+
+        this.prepareWriter();
     }
 
-    @Override
-    public void onEvent(RecordEvent event) {
+    private void prepareWriter() {
         if (!writerPrepared) {
             context.declareOutputFields();
             Thread.currentThread().setContextClassLoader(writer.getClass().getClassLoader());
@@ -32,7 +33,10 @@ public class RecordWorkHandler implements WorkHandler<RecordEvent> {
                 metric.setWriterStartTime(System.currentTimeMillis());
             }
         }
+    }
 
+    @Override
+    public void onEvent(RecordEvent event) {
         writer.execute(event.getRecord());
         metric.getWriteCount().incrementAndGet();
     }

@@ -46,6 +46,10 @@
 			<name>excel</name>
 			<class>com.github.stuxuhai.hdata.plugin.excel.reader.ExcelReader</class>
 		</reader>
+		<reader>
+			<name>socket</name>
+			<class>com.github.stuxuhai.hdata.plugin.reader.socket.SocketReader</class>
+		</reader>
 	</readers>
 
 	<writers>
@@ -89,5 +93,9 @@
 			<name>excel</name>
 			<class>com.github.stuxuhai.hdata.plugin.excel.writer.ExcelWriter</class>
 		</writer>
+        <writer>
+            <name>dubbo</name>
+            <class>com.github.stuxuhai.hdata.plugin.dubbo.writer.DubboWriter</class>
+        </writer>
 	</writers>
 </plugins>

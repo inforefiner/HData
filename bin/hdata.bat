@@ -6,11 +6,11 @@ set HDATA_LIB_DIR=%HDATA_HOME%\lib
 set HDATA_CONF_DIR=%HDATA_HOME%\conf
 set HDATA_PLUGINS_DIR=%HDATA_HOME%\plugins
 
-if not defined java_home ( 
+if not defined java_home (
 echo "Not defined JAVA_HOME,Please install java in your PATH and set JAVA_HOME"
 call :timeoutAndExit
-) 
-set JAVA="%JAVA_HOME%\bin\java.exe"
+)
+set JAVA=%JAVA_HOME%\bin\java.exe
 
 if not exist %JAVA% (
     echo "Could not find any executable java binary. Please install java in your PATH or set JAVA_HOME"
@@ -22,7 +22,7 @@ set HDATA_CLASSPATH=.;%HDATA_LIB_DIR%\*
 ::for /f %%i in ('dir /b /ad %HDATA_PLUGINS_DIR%') do (
 ::set HDATA_CLASSPATH=!HDATA_CLASSPATH!;!HDATA_PLUGINS_DIR!\%%i\*
 ::)
-echo %HDATA_CLASSPATH% 
+echo %HDATA_CLASSPATH%
 
 set JAVA_OPTS=%JAVA_OPTS% -Xss256k
 set JAVA_OPTS=%JAVA_OPTS% -Xms1G -Xmx1G -Xmn512M
@@ -41,8 +41,18 @@ set JAVA_OPTS=%JAVA_OPTS% -Dlog4j.configurationFile=file:///%HDATA_CONF_DIR%\log
 
 set MAIN_CLASS="com.github.stuxuhai.hdata.CliDriver"
 
-echo %JAVA% %JAVA_OPTS% -classpath "%HDATA_CLASSPATH%" %MAIN_CLASS% %1 %2 %3 %4 %5 %6 %7 %8 %9
-%JAVA% %JAVA_OPTS% -classpath "%HDATA_CLASSPATH%" %MAIN_CLASS% %1 %2 %3 %4 %5 %6 %7 %8 %9
+set PARAMETERS=
+
+:LOOP
+SET TEMP=%1
+IF NOT "%TEMP%" == "" (
+SET PARAMETERS=%PARAMETERS% %TEMP%
+SHIFT
+GOTO LOOP
+)
+
+rem %JAVA% %JAVA_OPTS% -classpath "%HDATA_CLASSPATH%" %MAIN_CLASS% %PARAMETERS%
+%JAVA% %JAVA_OPTS% -classpath "%HDATA_CLASSPATH%" %MAIN_CLASS% %PARAMETERS%
 
 goto :EOF
 

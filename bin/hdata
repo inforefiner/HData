@@ -36,7 +36,7 @@ for f in $HDATA_LIB_DIR/*.jar; do
 done
 
 JAVA_OPTS="$JAVA_OPTS -Xss256k"
-JAVA_OPTS="$JAVA_OPTS -Xms1G -Xmx1G -Xmn512M"
+JAVA_OPTS="$JAVA_OPTS -Xms2G -Xmx2G -Xmn1024M"
 JAVA_OPTS="$JAVA_OPTS -XX:+UseParNewGC"
 JAVA_OPTS="$JAVA_OPTS -XX:+UseConcMarkSweepGC"
 JAVA_OPTS="$JAVA_OPTS -XX:+CMSClassUnloadingEnabled"
@@ -52,4 +52,5 @@ JAVA_OPTS="$JAVA_OPTS -Dlog4j.configurationFile=file:///$HDATA_CONF_DIR/log4j2.x
 
 MAIN_CLASS="com.github.stuxuhai.hdata.CliDriver"
 
+echo $JAVA_OPTS
 exec "$JAVA" $JAVA_OPTS -cp "$HDATA_CLASSPATH" $MAIN_CLASS "$@"

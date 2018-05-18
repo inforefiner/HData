@@ -1,26 +1,26 @@
 package com.github.stuxuhai.hdata;
 
-import java.util.Map.Entry;
-import java.util.Properties;
-
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.Option;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
-import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.core.LoggerContext;
-import org.apache.logging.log4j.core.config.Configuration;
-
 import com.github.stuxuhai.hdata.api.PluginConfig;
+import com.github.stuxuhai.hdata.api.TransformConfig;
 import com.github.stuxuhai.hdata.config.DefaultJobConfig;
 import com.github.stuxuhai.hdata.core.HData;
 import com.github.stuxuhai.hdata.exception.HDataException;
 import com.google.common.base.Throwables;
+import org.apache.commons.cli.*;
+import org.apache.commons.lang.SystemUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.config.Configuration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.UnsupportedEncodingException;
+import java.lang.management.ManagementFactory;
+import java.net.URLDecoder;
+import java.util.Map.Entry;
+import java.util.Properties;
 
 public class CliDriver {
 
@@ -31,12 +31,13 @@ public class CliDriver {
     private static final String WRITER_OPTION = "writer";
     private static final String READER_VARS_OPTION = "R";
     private static final String WRITER_VARS_OPTION = "W";
+    private static final String TRANSFORMER_VARS_OPTION = "T";
 
-    private static final Logger LOGGER = LogManager.getLogger();
+    private static final Logger LOGGER = LoggerFactory.getLogger(CliDriver.class);
 
     /**
      * 创建命令行选项
-     * 
+     *
      * @return
      */
     public Options createOptions() {
@@ -50,12 +51,14 @@ public class CliDriver {
 
         options.addOption(null, WRITER_OPTION, true, "writer name");
         options.addOption(Option.builder(WRITER_VARS_OPTION).hasArgs().build());
+
+        options.addOption(Option.builder(TRANSFORMER_VARS_OPTION).hasArgs().build());
         return options;
     }
 
     /**
      * 打印命令行帮助信息
-     * 
+     *
      * @param options
      */
     public void printHelp(Options options) {
@@ -65,7 +68,7 @@ public class CliDriver {
 
     /**
      * 替换命令行变量
-     * 
+     *
      * @param config
      * @param vars
      */
@@ -84,18 +87,46 @@ public class CliDriver {
 
     private void putOptionValues(Properties props, String[] values) {
         if (props != null && values != null) {
-            for (int i = 0, len = values.length; i < len; i++) {
-                props.put(values[i], values[++i]);
+            for (int i = 0; i < values.length; i++) {
+                String str = values[i];
+                try {
+                    str = URLDecoder.decode(str, "utf-8");
+                } catch (UnsupportedEncodingException e) {
+//                    e.printStackTrace();
+                }
+                int idx = str.indexOf("=");
+                String key = str.substring(0, idx);
+                String value = str.substring(idx + 1);
+                props.put(key, value);
+            }
+//            for (int i = 0, i < values.length; i++) {
+//                String str = values[i];
+//                props.put(values[i], values[++i]);
+//            }
+        }
+    }
+
+    private static void HandleArgsByOs(String[] args) {
+        if (args != null && SystemUtils.IS_OS_WINDOWS) {
+            for (int i = 0; i < args.length; i++) {
+                System.out.println("before = " + args[i]);
+                args[i] = args[i].replaceAll("#", "=");
+                System.out.println("after = " + args[i]);
             }
         }
     }
 
+
     /**
      * 主程序入口
-     * 
+     *
      * @param args
      */
     public static void main(String[] args) {
+
+        HandleArgsByOs(args);
+
+        LOGGER.info("ARGS = {}", StringUtils.join(args, ","));
 
         CliDriver cliDriver = new CliDriver();
         Options options = cliDriver.createOptions();
@@ -141,8 +172,15 @@ public class CliDriver {
                 PluginConfig writerConfig = new PluginConfig();
                 cliDriver.putOptionValues(writerConfig, cmd.getOptionValues(WRITER_VARS_OPTION));
 
-                jobConfig = new DefaultJobConfig(readerName, readerConfig, writerName, writerConfig);
+                TransformConfig transformConfig = new TransformConfig();
+                cliDriver.putOptionValues(transformConfig, cmd.getOptionValues(TRANSFORMER_VARS_OPTION));
+
+                jobConfig = new DefaultJobConfig(readerName, readerConfig, writerName, writerConfig, transformConfig);
             }
+
+            String name = ManagementFactory.getRuntimeMXBean().getName();
+            String pid = name.split("@")[0];
+            LOGGER.info("#PID={}#", pid);
 
             HData hData = new HData();
             hData.start(jobConfig);

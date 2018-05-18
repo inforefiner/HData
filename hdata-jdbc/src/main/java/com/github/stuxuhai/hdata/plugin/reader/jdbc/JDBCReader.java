@@ -1,30 +1,18 @@
 package com.github.stuxuhai.hdata.plugin.reader.jdbc;
 
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.text.DecimalFormat;
-import java.util.List;
-
-import org.apache.commons.dbutils.DbUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import com.github.stuxuhai.hdata.api.DefaultRecord;
-import com.github.stuxuhai.hdata.api.Fields;
-import com.github.stuxuhai.hdata.api.JobContext;
-import com.github.stuxuhai.hdata.api.OutputFieldsDeclarer;
-import com.github.stuxuhai.hdata.api.PluginConfig;
-import com.github.stuxuhai.hdata.api.Reader;
-import com.github.stuxuhai.hdata.api.Record;
-import com.github.stuxuhai.hdata.api.RecordCollector;
-import com.github.stuxuhai.hdata.api.Splitter;
+import com.github.stuxuhai.hdata.api.*;
 import com.github.stuxuhai.hdata.common.HDataConfigConstants;
 import com.github.stuxuhai.hdata.exception.HDataException;
 import com.github.stuxuhai.hdata.plugin.jdbc.JdbcUtils;
 import com.google.common.base.Throwables;
+import org.apache.commons.dbutils.DbUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import java.io.UnsupportedEncodingException;
+import java.sql.*;
+import java.text.DecimalFormat;
+import java.util.List;
 
 public class JDBCReader extends Reader {
 
@@ -109,6 +97,7 @@ public class JDBCReader extends Reader {
         long endTime = startTime;
 
         try {
+            LOGGER.info("execute select sql =  {} ", sql);
             ResultSet rs = statement.executeQuery(sql);
             endTime = System.currentTimeMillis();
 
@@ -125,7 +114,31 @@ public class JDBCReader extends Reader {
             while (rs.next()) {
                 Record r = new DefaultRecord(columnCount);
                 for (int i = 1; i <= columnCount; i++) {
-                    Object o = rs.getObject(i);
+                    Object o = null;
+                    try {
+                        o = rs.getObject(i);
+                    } catch (SQLException e) {
+                        o = "";
+//                        LOGGER.error("ResultSet getObject error, case: {}", e.getMessage());
+                    }
+                    if (o != null && JdbcUtils.isClobType(columnTypes[i - 1])) {
+                        Clob clob = (Clob) o;
+                        try {
+                            o = clob.getSubString(1, (int) clob.length());
+                        } catch (SQLException e) {
+//                            e.printStackTrace();
+                            o = "";
+                        }
+                    }
+                    if (o != null && JdbcUtils.isBlobType(columnTypes[i - 1])) {
+                        Blob blob = (Blob) o;
+                        try {
+                            o = new String(blob.getBytes(1, (int) blob.length()), "UTF8");
+                        } catch (UnsupportedEncodingException e) {
+//                            e.printStackTrace();
+                            o = "";
+                        }
+                    }
                     if (o == null && nullString != null && JdbcUtils.isStringType(columnTypes[i - 1])) {
                         r.add(i - 1, nullString);
                     } else if (o == null && nullNonString != null && !JdbcUtils.isStringType(columnTypes[i - 1])) {
