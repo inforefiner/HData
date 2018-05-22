@@ -26,7 +26,7 @@ public class SocketReader extends Reader {
     private int operate_type;
     private Pattern operate_pattern;
     private Map<String, Pattern> patternMap = new HashMap<>();
-    private Map<String, String> defaultsMap = new HashMap<>();
+    private Map defaultsMap = new HashMap();
 
     @Override
     public void prepare(JobContext context, PluginConfig readerConfig) {
@@ -95,8 +95,8 @@ public class SocketReader extends Reader {
                                             //e.printStackTrace();
                                         }
                                         if (str == null) {
-                                            if(defaultsMap.containsKey(column)){
-                                                str = defaultsMap.get(column);
+                                            if(defaultsMap != null && defaultsMap.containsKey(column)){
+                                                str = (String)defaultsMap.get(column);
                                             }else {
                                                 str = null_string;
                                             }
@@ -124,6 +124,7 @@ public class SocketReader extends Reader {
                         case 4: //多表达式抽取
                             for(String k: patternMap.keySet()){
                                 Pattern p = patternMap.get(k);
+                                Map _defaultsMap = (Map)defaultsMap.get(k);
                                 matcher = p.matcher(line);
                                 if(matcher.find()){
                                     record = new DefaultRecord(extract_columns.length);
@@ -140,8 +141,8 @@ public class SocketReader extends Reader {
                                                 //e.printStackTrace();
                                             }
                                             if (str == null) {
-                                                if(defaultsMap.containsKey(column)){
-                                                    str = defaultsMap.get(column);
+                                                if(_defaultsMap != null && _defaultsMap.containsKey(column)){
+                                                    str = (String)_defaultsMap.get(column);
                                                 }else {
                                                     str = null_string;
                                                 }

@@ -8,16 +8,11 @@ import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
-import org.elasticsearch.common.transport.TransportAddress;
-import org.elasticsearch.index.query.FilterBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class EsReader extends Reader {
@@ -93,9 +88,5 @@ public class EsReader extends Reader {
         return null;
     }
 
-    public static void main(String[] args) {
-        Map map = new HashMap();
-        map.put("1", 12);
-        System.out.println(map.get("3"));
-    }
+
 }
