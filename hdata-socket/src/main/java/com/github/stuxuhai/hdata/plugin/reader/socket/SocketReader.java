@@ -27,11 +27,13 @@ public class SocketReader extends Reader {
     private Pattern operate_pattern;
     private Map<String, Pattern> patternMap = new HashMap<>();
     private Map defaultsMap = new HashMap();
+    private String charset;
 
     @Override
     public void prepare(JobContext context, PluginConfig readerConfig) {
         this.ip_bind = readerConfig.getString(SocketReaderProperties.RECEIVER_BIND, "127.0.0.1");
         this.receiver_port = readerConfig.getInt(SocketReaderProperties.RECEIVER_PORT, 10000);
+        this.charset = readerConfig.getString(SocketReaderProperties.RECEIVER_CHARSET, "utf-8");
         this.null_string = readerConfig.getString(SocketReaderProperties.NULL_STRING, "");
         this.operate_type = readerConfig.getInt(SocketReaderProperties.OPERATE_TYPE, 0);
         String columns = readerConfig.getString(SocketReaderProperties.EXTRACT_COLUMNS);
@@ -73,7 +75,7 @@ public class SocketReader extends Reader {
 
     @Override
     public void execute(final RecordCollector recordCollector) {
-        server = new Receiver(ip_bind, receiver_port, new ReadListener() {
+        server = new Receiver(ip_bind, receiver_port, charset, new ReadListener() {
             @Override
             public void callback(String line) {
                 if (!line.isEmpty()) {

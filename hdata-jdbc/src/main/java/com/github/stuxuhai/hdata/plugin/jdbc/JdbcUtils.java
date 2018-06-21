@@ -118,6 +118,10 @@ public class JdbcUtils {
         return driver.indexOf("db2") > -1 ? true : false;
     }
 
+    public static boolean isPG(String driver) {
+        return driver.indexOf("postgresql") > -1 ? true : false;
+    }
+
     public static long getCount(Connection conn, final String sql) throws SQLException {
         long count = 0l;
         Pattern p = Pattern.compile("\\s+FROM\\s+.*", Pattern.CASE_INSENSITIVE);

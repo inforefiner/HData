@@ -3,11 +3,11 @@ package com.github.stuxuhai.hdata.plugin.dubbo.writer;
 import com.alibaba.dubbo.config.ApplicationConfig;
 import com.alibaba.dubbo.config.ReferenceConfig;
 import com.alibaba.dubbo.config.RegistryConfig;
-import com.datapps.cheetah.data.rpc.DataService;
 import com.github.stuxuhai.hdata.api.JobContext;
 import com.github.stuxuhai.hdata.api.PluginConfig;
 import com.github.stuxuhai.hdata.api.Record;
 import com.github.stuxuhai.hdata.api.Writer;
+import com.inforefiner.europa.data.rpc.DataService;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -170,7 +170,8 @@ public class DubboWriter extends Writer {
             byte[] compressed = Lz4Util.compress(bytes, length);
             int ret = dataService.execute(tenantId, taskId, channelId, compressed, length, list.size());
             if (ret == -1) {
-                this.jobContext.setWriterError(true);
+//                this.jobContext.setWriterError(true);
+                LOG.error("task {} channel {} has error when flush data. the data server maybe lost.", taskId, channelId);
             } else {
                 LOG.info("task {} channel {} has flush {} records, size is {}, use time {} ms", taskId, channelId, list.size(), length, System.currentTimeMillis() - l);
             }

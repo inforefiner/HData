@@ -12,6 +12,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.net.InetSocketAddress;
+import java.nio.charset.Charset;
 
 public class Receiver {
 
@@ -19,11 +20,13 @@ public class Receiver {
 
     private String ipAddr;
     private int port;
+    private String charset;
     private ReadListener readListener;
 
-    public Receiver(String ipAddr, int port, ReadListener readListener) {
+    public Receiver(String ipAddr, int port, String charset, ReadListener readListener) {
         this.ipAddr = ipAddr;
         this.port = port;
+        this.charset = charset;
         this.readListener = readListener;
     }
 
@@ -40,7 +43,7 @@ public class Receiver {
                         @Override
                         protected void initChannel(SocketChannel socketChannel) throws Exception {
                             socketChannel.pipeline().addLast(new LineBasedFrameDecoder(1024 * 1024));
-                            socketChannel.pipeline().addLast(new StringDecoder());
+                            socketChannel.pipeline().addLast(new StringDecoder(Charset.forName(charset)));
                             socketChannel.pipeline().addLast(new ChannelInboundHandlerAdapter() {
                                 @Override
                                 public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
