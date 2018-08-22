@@ -1,22 +1,18 @@
 package com.github.stuxuhai.hdata.ftp;
 
+import org.apache.commons.net.ftp.FTP;
+import org.apache.commons.net.ftp.FTPClient;
+import org.apache.commons.net.ftp.FTPFile;
+import org.apache.commons.net.ftp.FTPReply;
+
 import java.io.IOException;
 import java.net.SocketException;
 import java.util.List;
 import java.util.regex.Pattern;
 
-import org.apache.commons.net.ftp.FTP;
-import org.apache.commons.net.ftp.FTPClient;
-import org.apache.commons.net.ftp.FTPFile;
-import org.apache.commons.net.ftp.FTPReply;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import com.google.common.base.Throwables;
-
 public class FTPUtils {
 
-	private static final Logger LOGGER = LogManager.getLogger(FTPUtils.class);
+//	private static final Logger LOGGER = LogManager.getLogger(FTPUtils.class);
 
 	public static FTPClient getFtpClient(String host, int port, String username, String password)
 			throws SocketException, IOException {
@@ -72,7 +68,7 @@ public class FTPUtils {
 			try {
 				ftpClient.disconnect();
 			} catch (IOException e) {
-				LOGGER.error(Throwables.getStackTraceAsString(e));
+//				LOGGER.error(Throwables.getStackTraceAsString(e));
 			}
 		}
 	}
