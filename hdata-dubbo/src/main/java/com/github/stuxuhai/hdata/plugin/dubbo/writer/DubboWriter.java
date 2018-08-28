@@ -108,10 +108,15 @@ public class DubboWriter extends Writer {
                     ApplicationConfig application = new ApplicationConfig();
                     application.setName("hdata-dubbo-writer");
                     RegistryConfig registry = new RegistryConfig();
-                    registry.setProtocol(writerConfig.getString("protocol"));
+                    String protocol = writerConfig.getString("protocol");
+                    registry.setProtocol(protocol);
+                    if("zookeeper".equals(protocol)){
+                        registry.setClient("curatorx");
+                    }
                     registry.setAddress(writerConfig.getString("address"));
                     registry.setUsername(writerConfig.getString("username"));
                     registry.setPassword(writerConfig.getString("password"));
+
 
                     ReferenceConfig<DataService> reference = new ReferenceConfig<DataService>();
                     reference.setApplication(application);
