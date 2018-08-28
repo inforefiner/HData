@@ -72,4 +72,15 @@ public class FTPUtils {
 			}
 		}
 	}
+
+
+	public static void main(String[] args) {
+
+		String filenameRegexp = "([\\w\\W]*).csv";
+		String[] filenames = new String[]{"ftp_demo.csv", "demo.csv"};
+
+		for(String name: filenames){
+			System.out.println(Pattern.matches(filenameRegexp, name));
+		}
+	}
 }

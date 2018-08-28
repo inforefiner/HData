@@ -29,7 +29,9 @@ public class CuratorZookeeperClient extends AbstractZookeeperClient<CuratorWatch
     public CuratorZookeeperClient(URL url) {
         super(url);
         try {
+            String connectString = url.getBackupAddress();
             CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder()
+                    .connectString(connectString)
                     .connectString(url.getBackupAddress())
                     .retryPolicy(new RetryNTimes(Integer.MAX_VALUE, 1000))
                     .connectionTimeoutMs(5000);
@@ -37,6 +39,7 @@ public class CuratorZookeeperClient extends AbstractZookeeperClient<CuratorWatch
             if (authority != null && authority.length() > 0) {
                 ACLProvider aclProvider = new ACLProvider() {
                     private List<ACL> acl;
+
                     public List<ACL> getDefaultAcl() {
                         if (acl == null) {
                             ArrayList<ACL> acl = ZooDefs.Ids.CREATOR_ALL_ACL;
@@ -129,7 +132,7 @@ public class CuratorZookeeperClient extends AbstractZookeeperClient<CuratorWatch
         }
 
         public void process(WatchedEvent event) throws Exception {
-            if (listener != null) {
+            if (listener != null && event.getPath() != null) {
                 listener.childChanged(event.getPath(), client.getChildren().usingWatcher(this).forPath(event.getPath()));
             }
         }

@@ -55,9 +55,6 @@ public class DubboWriter extends Writer {
 
     private String channelId;
 
-    private JobContext jobContext;
-
-
     @Override
     public void prepare(JobContext jobContext, PluginConfig writerConfig) {
 
@@ -77,8 +74,6 @@ public class DubboWriter extends Writer {
             throw new RuntimeException("taskId can't be null !");
         }
 
-        this.jobContext = jobContext;
-
         channelId = "" + ChannelGenerator.getAndIncrement();
 
         if (serverPrepared.compareAndSet(false, true)) {
@@ -89,8 +84,8 @@ public class DubboWriter extends Writer {
             try {
                 dataService.prepare(tenantId, taskId, writerConfig);
             } catch (Exception e) {
-                LOG.error("tenantId = {} taskId = {} cursorValue={}", tenantId, taskId, cursorValue);
-                e.printStackTrace();
+                LOG.error("can't connect europa data server", e);
+                throw new RuntimeException("can't connect europa data server");
             }
         }
 
@@ -104,7 +99,6 @@ public class DubboWriter extends Writer {
         int index = writerCounter.incrementAndGet();
 
         LOG.info("dubbo writer{} started, taskId={}, channelId={}, bufferSize={}", index, taskId, channelId, bufferSize);
-
     }
 
     public static DataService ConnectWriterServer(PluginConfig writerConfig) {
@@ -118,7 +112,6 @@ public class DubboWriter extends Writer {
                     registry.setAddress(writerConfig.getString("address"));
                     registry.setUsername(writerConfig.getString("username"));
                     registry.setPassword(writerConfig.getString("password"));
-                    registry.setClient("curatorx");
 
                     ReferenceConfig<DataService> reference = new ReferenceConfig<DataService>();
                     reference.setApplication(application);
@@ -126,7 +119,11 @@ public class DubboWriter extends Writer {
                     reference.setInterface(DataService.class);
                     reference.setTimeout(60 * 1000);
 
-                    dataService = reference.get();
+                    try {
+                        dataService = reference.get();
+                    } catch (Exception e) {
+                       LOG.error("can't connect registry server", e);
+                    }
                 }
             }
 
@@ -170,7 +167,6 @@ public class DubboWriter extends Writer {
             byte[] compressed = Lz4Util.compress(bytes, length);
             int ret = dataService.execute(tenantId, taskId, channelId, compressed, length, list.size());
             if (ret == -1) {
-//                this.jobContext.setWriterError(true);
                 LOG.error("task {} channel {} has error when flush data. the data server maybe lost.", taskId, channelId);
             } else {
                 LOG.info("task {} channel {} has flush {} records, size is {}, use time {} ms", taskId, channelId, list.size(), length, System.currentTimeMillis() - l);
