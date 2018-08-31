@@ -14,4 +14,8 @@ public class FTPReaderProperties {
 	public static final String FIELDS_COUNT = "fields.count";
 	public static final String FILES = "reader.files";
 	public static final String START_ROW = "start.row";
+
+	public static final String READ_TO = "read.to"; //hdfs, socket
+	public static final String HDFS_PATH = "hdfs.path";
+	public static final String HDFS_OVERWRITE = "hdfs.overwrite";
 }

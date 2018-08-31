@@ -1,18 +1,18 @@
 package com.github.stuxuhai.hdata.plugin.reader.ftp;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.apache.commons.net.ftp.FTPClient;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import com.github.stuxuhai.hdata.api.JobConfig;
 import com.github.stuxuhai.hdata.api.PluginConfig;
 import com.github.stuxuhai.hdata.api.Splitter;
 import com.github.stuxuhai.hdata.ftp.FTPUtils;
+import com.github.stuxuhai.hdata.ftp.FtpFile;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
+import org.apache.commons.net.ftp.FTPClient;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class FTPSplitter extends Splitter {
 
@@ -40,7 +40,7 @@ public class FTPSplitter extends Splitter {
 		FTPClient ftpClient = null;
 		try {
 			ftpClient = FTPUtils.getFtpClient(host, port, username, password);
-			List<String> files = new ArrayList<String>();
+			List<FtpFile> files = new ArrayList();
 			FTPUtils.listFile(files, ftpClient, dir, filenameRegexp, recursive);
 			if (files.size() > 0) {
 				if (parallelism == 1) {
@@ -49,7 +49,7 @@ public class FTPSplitter extends Splitter {
 				} else {
 					double step = (double) files.size() / parallelism;
 					for (int i = 0; i < parallelism; i++) {
-						List<String> splitedFiles = new ArrayList<String>();
+						List<FtpFile> splitedFiles = new ArrayList();
 						for (int start = (int) Math.ceil(step * i), end = (int) Math
 								.ceil(step * (i + 1)); start < end; start++) {
 							splitedFiles.add(files.get(start));
@@ -65,8 +65,6 @@ public class FTPSplitter extends Splitter {
 		} finally {
 			FTPUtils.closeFtpClient(ftpClient);
 		}
-
 		return list;
 	}
-
 }
