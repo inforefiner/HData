@@ -42,7 +42,7 @@ public class FTPSplitter extends Splitter {
 			ftpClient = FTPUtils.getFtpClient(host, port, username, password);
 			List<FtpFile> files = new ArrayList();
 			FTPUtils.listFile(files, ftpClient, dir, filenameRegexp, recursive);
-			if (files.size() > 0) {
+//			if (files.size() > 0) {
 				if (parallelism == 1) {
 					readerConfig.put(FTPReaderProperties.FILES, files);
 					list.add(readerConfig);
@@ -59,7 +59,7 @@ public class FTPSplitter extends Splitter {
 						list.add(pluginConfig);
 					}
 				}
-			}
+//			}
 		} catch (Exception e) {
 			LOGGER.error(Throwables.getStackTraceAsString(e));
 		} finally {

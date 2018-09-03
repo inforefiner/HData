@@ -10,6 +10,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.net.ftp.FTPClient;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.io.IOUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -20,6 +22,8 @@ import java.util.List;
 import java.util.zip.GZIPInputStream;
 
 public class FTPReader extends Reader {
+
+    private static final Logger LOG = LogManager.getLogger(FTPReader.class);
 
     private Fields fields;
     private String host;
@@ -82,10 +86,12 @@ public class FTPReader extends Reader {
                     }
                     InputStream is = ftpClient.retrieveFileStream(_filePath);
                     try {
-                        OutputStream out = HdfsUtil.getInstance().create(fullPath);
+                        String pendingPath = fullPath + ".pending";
+                        OutputStream out = HdfsUtil.getInstance().create(pendingPath);
                         IOUtils.copyBytes(is, out, 1024, true);
+                        HdfsUtil.getInstance().rename(pendingPath, fullPath);
                     } catch (Throwable e) {
-                        e.printStackTrace();
+                        LOG.error("can't write to hdfs", e);
                     }
                     Record record = new DefaultRecord(3);
                     record.add(fullPath);
