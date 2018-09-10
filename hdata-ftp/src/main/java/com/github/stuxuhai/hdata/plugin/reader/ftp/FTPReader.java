@@ -1,6 +1,7 @@
 package com.github.stuxuhai.hdata.plugin.reader.ftp;
 
 import com.github.stuxuhai.hdata.api.*;
+import com.github.stuxuhai.hdata.api.Reader;
 import com.github.stuxuhai.hdata.exception.HDataException;
 import com.github.stuxuhai.hdata.ftp.FTPUtils;
 import com.github.stuxuhai.hdata.ftp.FtpFile;
@@ -13,10 +14,7 @@ import org.apache.hadoop.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
@@ -40,6 +38,7 @@ public class FTPReader extends Reader {
     private String readTo;
     private String hdfsPath;
     private boolean hdfsOverWrite;
+    private String httpUrl;
 
     @SuppressWarnings("unchecked")
     @Override
@@ -60,6 +59,7 @@ public class FTPReader extends Reader {
         readTo = readerConfig.getString(FTPReaderProperties.READ_TO, "");
         hdfsPath = readerConfig.getString(FTPReaderProperties.HDFS_PATH, "");
         hdfsOverWrite = readerConfig.getBoolean(FTPReaderProperties.HDFS_OVERWRITE, true);
+        httpUrl = readerConfig.getString(FTPReaderProperties.HTTP_URL, "");
 
         if (readerConfig.containsKey(FTPReaderProperties.SCHEMA)) {
             fields = new Fields();
@@ -87,17 +87,38 @@ public class FTPReader extends Reader {
                     InputStream is = ftpClient.retrieveFileStream(_filePath);
                     try {
                         String pendingPath = fullPath + ".pending";
+                        HdfsUtil.getInstance().delete(pendingPath);
                         OutputStream out = HdfsUtil.getInstance().create(pendingPath);
+                        LOG.info("transmitting file {}", filePath);
+                        long l = System.currentTimeMillis();
                         IOUtils.copyBytes(is, out, 1024, true);
+                        LOG.info("file {} has been transmitted, use time {} sec.", filePath, (System.currentTimeMillis() - l) / 1000);
                         HdfsUtil.getInstance().rename(pendingPath, fullPath);
                     } catch (Throwable e) {
-                        LOG.error("can't write to hdfs", e);
+                        LOG.error("can't write to hdfs : " + fullPath, e);
+                        e.printStackTrace();
                     }
                     Record record = new DefaultRecord(3);
                     record.add(fullPath);
                     record.add(file.getSize());
                     record.add(file.getModificationTime());
                     recordCollector.send(record);
+                } else if ("http".equalsIgnoreCase(readTo)) {
+                    InputStream is = ftpClient.retrieveFileStream(_filePath);
+                    File tmpFile = File.createTempFile("tmp_", "");
+                    tmpFile.deleteOnExit();
+                    FileOutputStream fos = new FileOutputStream(tmpFile);
+                    IOUtils.copyBytes(is, fos, 1024, true);
+                    String fullPath = hdfsPath + filePath.replaceFirst(dir, "");
+                    FileSender sender = new FileSender(httpUrl, tmpFile.getPath(), fullPath);
+                    if (!sender.exists(file.getSize(), file.getModificationTime())) {
+                        sender.send();
+                        Record record = new DefaultRecord(3);
+                        record.add(fullPath);
+                        record.add(file.getSize());
+                        record.add(file.getModificationTime());
+                        recordCollector.send(record);
+                    }
                 } else {
                     InputStream is = ftpClient.retrieveFileStream(_filePath);
                     BufferedReader br = null;

@@ -18,4 +18,6 @@ public class FTPReaderProperties {
 	public static final String READ_TO = "read.to"; //hdfs, socket
 	public static final String HDFS_PATH = "hdfs.path";
 	public static final String HDFS_OVERWRITE = "hdfs.overwrite";
+
+	public static final String HTTP_URL = "http.url";
 }

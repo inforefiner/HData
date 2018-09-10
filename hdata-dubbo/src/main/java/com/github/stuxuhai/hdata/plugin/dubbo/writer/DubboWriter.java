@@ -46,7 +46,7 @@ public class DubboWriter extends Writer {
 
         channelId = "" + ChannelGenerator.getAndIncrement();
 
-        String serviceType = writerConfig.getString("ServiceId", "DTS");
+        String serviceType = writerConfig.getString("ServiceType", "DTS");
 
         switch (serviceType) {
             case "DTS":

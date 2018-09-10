@@ -71,4 +71,14 @@ public class HdfsUtil {
         }
         return null;
     }
+
+    public void delete(String path) {
+        if (exist(path)) {
+            try {
+                fs.delete(new Path(path), false);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
 }
