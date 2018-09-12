@@ -85,6 +85,10 @@ public class FTPReader extends Reader {
                         continue;
                     }
                     InputStream is = ftpClient.retrieveFileStream(_filePath);
+                    if (is == null || is.available() == 0) {
+                        LOG.error("file " + filePath + " can't get by ftp client.");
+                        continue;
+                    }
                     try {
                         String pendingPath = fullPath + ".pending";
                         HdfsUtil.getInstance().delete(pendingPath);
