@@ -74,11 +74,20 @@ public class FTPUtils {
 
     public static void main(String[] args) {
 
-        String filenameRegexp = "([\\w\\W]*).csv";
-        String[] filenames = new String[]{"ftp_demo.csv", "demo.csv"};
-
-        for (String name : filenames) {
-            System.out.println(Pattern.matches(filenameRegexp, name));
+        try {
+            FTPClient client = getFtpClient("192.168.1.84", 21, "europa", "europa");
+            FTPFile[] files = client.listFiles("ftp_dir2");
+            for (FTPFile f: files){
+                System.out.println(f.toFormattedString());
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
+//        String filenameRegexp = "([\\w\\W]*).csv";
+//        String[] filenames = new String[]{"ftp_demo.csv", "demo.csv"};
+//
+//        for (String name : filenames) {
+//            System.out.println(Pattern.matches(filenameRegexp, name));
+//        }
     }
 }

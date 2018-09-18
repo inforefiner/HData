@@ -81,11 +81,15 @@ public class FTPReader extends Reader {
                 if ("hdfs".equalsIgnoreCase(readTo)) {
                     String fullPath = hdfsPath + filePath.replaceFirst(dir, "");
                     FileStatus _fs = HdfsUtil.getInstance().status(fullPath);
-                    if (_fs != null && (!hdfsOverWrite || _fs.getModificationTime() >= file.getModificationTime())) {
-                        continue;
+                    if (_fs != null) {
+                        if ((!hdfsOverWrite || _fs.getModificationTime() >= file.getModificationTime())) {
+                            continue;
+                        } else {
+                            HdfsUtil.getInstance().delete(fullPath);
+                        }
                     }
                     InputStream is = ftpClient.retrieveFileStream(_filePath);
-                    if (is == null || is.available() == 0) {
+                    if (is == null) {
                         LOG.error("file " + filePath + " can't get by ftp client.");
                         continue;
                     }
