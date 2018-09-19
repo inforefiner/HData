@@ -33,21 +33,17 @@ public class DubboWriter extends Writer {
 
     @Override
     public void prepare(JobContext jobContext, PluginConfig writerConfig) {
-
         tenantId = writerConfig.getString("tenantId");
         if (StringUtils.isBlank(tenantId)) {
             throw new RuntimeException("tenantId can't be null !");
         }
-
         taskId = writerConfig.getString("taskId");
         if (StringUtils.isBlank(taskId)) {
             throw new RuntimeException("taskId can't be null !");
         }
-
         channelId = "" + ChannelGenerator.getAndIncrement();
 
         String serviceType = writerConfig.getString("ServiceType", "DTS");
-
         switch (serviceType) {
             case "DTS":
                 rpcService = new DataRpcService();
@@ -58,20 +54,19 @@ public class DubboWriter extends Writer {
             default:
                 throw new RuntimeException("non support the service type : " + serviceType);
         }
-
         writerCounter.incrementAndGet();
-
         if (serverPrepared.compareAndSet(false, true)) {
             String cursorValue = jobContext.getJobConfig().getString("CursorValue");
             if (cursorValue != null) {
                 writerConfig.setString("CursorValue", cursorValue);
             }
             try {
-                rpcService.prepare(tenantId, taskId, channelId, writerConfig);
+                rpcService.setup(tenantId, taskId, writerConfig);
             } catch (Throwable e) {
                 throw new RuntimeException("can't connect europa data server", e);
             }
         }
+        rpcService.prepare(channelId);
     }
 
     @Override
@@ -85,7 +80,6 @@ public class DubboWriter extends Writer {
             }
         }
     }
-
 
     @Override
     public void close() {

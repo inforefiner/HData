@@ -20,22 +20,24 @@ public class FileRpcService implements RpcCallable {
     private static FileService fileService;
 
     @Override
-    public void prepare(String tenantId, String taskId, String channelId, Configuration configuration) {
+    public void setup(String tenantId, String taskId, Configuration configuration) {
         this.tenantId = tenantId;
         this.taskId = taskId;
-        this.channelId = channelId;
-
         fileService = ConnectWriterServer(configuration);
         if (fileService == null) {
             throw new RuntimeException("target server out of service ! ");
         }
-
         try {
             fileService.prepare(tenantId, taskId, configuration);
         } catch (Exception e) {
             logger.error("can't connect europa data server", e);
             throw new RuntimeException("can't connect europa data server");
         }
+    }
+
+    @Override
+    public void prepare(String channelId) {
+        this.channelId = channelId;
     }
 
     @Override

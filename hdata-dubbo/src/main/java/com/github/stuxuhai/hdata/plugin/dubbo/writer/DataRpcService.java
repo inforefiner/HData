@@ -35,28 +35,28 @@ public class DataRpcService implements RpcCallable {
     private BlockingQueue<Object[]> bufferQueue;
 
     @Override
-    public void prepare(String tenantId, String taskId, String channelId, Configuration configuration) {
+    public void setup(String tenantId, String taskId, Configuration configuration) {
         this.tenantId = tenantId;
         this.taskId = taskId;
-        this.channelId = channelId;
 
         dataService = ConnectWriterServer(configuration);
         if (dataService == null) {
             throw new RuntimeException("target server out of service ! ");
         }
-
         try {
             dataService.prepare(tenantId, taskId, configuration);
         } catch (Exception e) {
             logger.error("can't connect europa data server", e);
             throw new RuntimeException("can't connect europa data server");
         }
+    }
 
-        int bufferSize = configuration.getInt("bufferSize", DEFAULT_BUFFER_SIZE);
-
-        bufferQueue = new ArrayBlockingQueue(bufferSize, true);
-
+    @Override
+    public void prepare(String channelId) {
+        this.channelId = channelId;
+        this.bufferQueue = new ArrayBlockingQueue(DEFAULT_BUFFER_SIZE, true);
         Thread t = new Thread(new DataSender());
+        t.setDaemon(true);
         t.start();
     }
 

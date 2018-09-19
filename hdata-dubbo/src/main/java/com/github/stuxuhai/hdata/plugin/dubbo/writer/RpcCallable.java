@@ -5,7 +5,9 @@ import com.github.stuxuhai.hdata.api.Record;
 
 public interface RpcCallable {
 
-    void prepare(String tenantId, String taskId, String channelId, Configuration configuration) throws Throwable;
+    void setup(String tenantId, String taskId, Configuration configuration) throws Throwable;
+
+    void prepare(String channelId);
 
     void execute(Record record) throws Throwable;
 
