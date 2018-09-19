@@ -21,8 +21,6 @@ public class FileRpcService implements RpcCallable {
 
     @Override
     public void setup(String tenantId, String taskId, Configuration configuration) {
-        this.tenantId = tenantId;
-        this.taskId = taskId;
         fileService = ConnectWriterServer(configuration);
         if (fileService == null) {
             throw new RuntimeException("target server out of service ! ");
@@ -36,8 +34,10 @@ public class FileRpcService implements RpcCallable {
     }
 
     @Override
-    public void prepare(String channelId) {
+    public void prepare(String tenantId, String taskId, String channelId) {
         this.channelId = channelId;
+        this.tenantId = tenantId;
+        this.taskId = taskId;
     }
 
     @Override

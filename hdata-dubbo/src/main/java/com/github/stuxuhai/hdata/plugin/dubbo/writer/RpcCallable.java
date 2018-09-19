@@ -7,7 +7,7 @@ public interface RpcCallable {
 
     void setup(String tenantId, String taskId, Configuration configuration) throws Throwable;
 
-    void prepare(String channelId);
+    void prepare(String tenantId, String taskId, String channelId);
 
     void execute(Record record) throws Throwable;
 

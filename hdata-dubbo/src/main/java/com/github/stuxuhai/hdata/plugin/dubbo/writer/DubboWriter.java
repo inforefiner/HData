@@ -54,19 +54,22 @@ public class DubboWriter extends Writer {
             default:
                 throw new RuntimeException("non support the service type : " + serviceType);
         }
-        writerCounter.incrementAndGet();
+        String cursorValue = jobContext.getJobConfig().getString("CursorValue");
+        if (cursorValue != null) {
+            writerConfig.setString("CursorValue", cursorValue);
+        }
+
         if (serverPrepared.compareAndSet(false, true)) {
-            String cursorValue = jobContext.getJobConfig().getString("CursorValue");
-            if (cursorValue != null) {
-                writerConfig.setString("CursorValue", cursorValue);
-            }
             try {
                 rpcService.setup(tenantId, taskId, writerConfig);
             } catch (Throwable e) {
                 throw new RuntimeException("can't connect europa data server", e);
             }
         }
-        rpcService.prepare(channelId);
+
+        rpcService.prepare(tenantId, taskId, channelId);
+
+        writerCounter.incrementAndGet();
     }
 
     @Override

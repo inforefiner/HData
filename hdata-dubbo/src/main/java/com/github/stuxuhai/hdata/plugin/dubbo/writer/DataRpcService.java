@@ -36,9 +36,6 @@ public class DataRpcService implements RpcCallable {
 
     @Override
     public void setup(String tenantId, String taskId, Configuration configuration) {
-        this.tenantId = tenantId;
-        this.taskId = taskId;
-
         dataService = ConnectWriterServer(configuration);
         if (dataService == null) {
             throw new RuntimeException("target server out of service ! ");
@@ -52,7 +49,9 @@ public class DataRpcService implements RpcCallable {
     }
 
     @Override
-    public void prepare(String channelId) {
+    public void prepare(String tenantId, String taskId, String channelId) {
+        this.tenantId = tenantId;
+        this.taskId = taskId;
         this.channelId = channelId;
         this.bufferQueue = new ArrayBlockingQueue(DEFAULT_BUFFER_SIZE, true);
         Thread t = new Thread(new DataSender());
