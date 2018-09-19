@@ -51,7 +51,7 @@ done
 
 cd $HDATA_BUILD_DIR
 
-EXCLUDE_LIST="csv excel hbase hdfs hive kafka mongodb"
+EXCLUDE_LIST="csv excel hbase hdfs hive kafka"
 for i in $EXCLUDE_LIST
 do
   echo $i

@@ -1,21 +1,10 @@
 package com.github.stuxuhai.hdata.plugin.writer.mongodb;
 
-import java.net.UnknownHostException;
-
-import org.apache.commons.lang3.ArrayUtils;
-
-import com.github.stuxuhai.hdata.api.Fields;
-import com.github.stuxuhai.hdata.api.JobContext;
-import com.github.stuxuhai.hdata.api.PluginConfig;
-import com.github.stuxuhai.hdata.api.Record;
-import com.github.stuxuhai.hdata.api.Writer;
+import com.github.stuxuhai.hdata.api.*;
 import com.github.stuxuhai.hdata.exception.HDataException;
 import com.google.common.base.Preconditions;
-import com.mongodb.BasicDBObject;
-import com.mongodb.DB;
-import com.mongodb.DBCollection;
-import com.mongodb.MongoClient;
-import com.mongodb.MongoClientURI;
+import com.mongodb.*;
+import org.apache.commons.lang3.ArrayUtils;
 
 public class MongoDBWriter extends Writer {
 
@@ -39,7 +28,7 @@ public class MongoDBWriter extends Writer {
 			mongoClient = new MongoClient(clientURI);
 			DB db = mongoClient.getDB(clientURI.getDatabase());
 			coll = db.getCollection(clientURI.getCollection());
-		} catch (UnknownHostException e) {
+		} catch (Throwable e) {
 			throw new HDataException(e);
 		}
 	}

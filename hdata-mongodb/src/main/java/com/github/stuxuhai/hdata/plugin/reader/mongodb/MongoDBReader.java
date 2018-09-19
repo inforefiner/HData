@@ -1,84 +1,114 @@
 package com.github.stuxuhai.hdata.plugin.reader.mongodb;
 
-import java.net.UnknownHostException;
-import java.util.Set;
-
-import com.github.stuxuhai.hdata.api.DefaultRecord;
-import com.github.stuxuhai.hdata.api.Fields;
-import com.github.stuxuhai.hdata.api.JobContext;
-import com.github.stuxuhai.hdata.api.OutputFieldsDeclarer;
-import com.github.stuxuhai.hdata.api.PluginConfig;
-import com.github.stuxuhai.hdata.api.Reader;
-import com.github.stuxuhai.hdata.api.Record;
-import com.github.stuxuhai.hdata.api.RecordCollector;
-import com.github.stuxuhai.hdata.api.Splitter;
-import com.github.stuxuhai.hdata.exception.HDataException;
+import com.github.stuxuhai.hdata.api.*;
 import com.mongodb.BasicDBObject;
-import com.mongodb.DB;
-import com.mongodb.DBCollection;
-import com.mongodb.DBCursor;
-import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
-import com.mongodb.MongoClientURI;
+import com.mongodb.MongoCredential;
+import com.mongodb.ServerAddress;
+import com.mongodb.client.FindIterable;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoCursor;
+import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.model.Filters;
+import org.apache.commons.lang3.StringUtils;
+import org.bson.Document;
+import org.bson.conversions.Bson;
+import org.bson.types.ObjectId;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public class MongoDBReader extends Reader {
 
-	private Fields fields;
-	private String uri;
-	private BasicDBObject condition;
-	private static final String OBJECT_ID_KEY = "_id";
+    private static int MIN_BATCH_SIZE = 5000;
 
-	@Override
-	public void prepare(JobContext context, PluginConfig readerConfig) {
-		uri = readerConfig.getString(MongoDBReaderProperties.URI);
-		condition = (BasicDBObject) readerConfig.get(MongoDBReaderProperties.QUERY);
-	}
+    private FindIterable<Document> iterable;
 
-	@Override
-	public void execute(RecordCollector recordCollector) {
-		MongoClientURI clientURI = new MongoClientURI(uri);
-		MongoClient mongoClient = null;
-		try {
-			mongoClient = new MongoClient(clientURI);
-			DB db = mongoClient.getDB(clientURI.getDatabase());
-			DBCollection coll = db.getCollection(clientURI.getCollection());
-			DBCursor cur = coll.find(condition);
-			while (cur.hasNext()) {
-				DBObject doc = cur.next();
-				Set<String> keys = doc.keySet();
-				Record record = new DefaultRecord(keys.size() - 1);
-				if (fields == null) {
-					fields = new Fields();
-					for (String key : keys) {
-						fields.add(key);
-					}
-				}
+    private String[] columns;
 
-				for (String key : keys) {
-					if (!OBJECT_ID_KEY.equals(key)) {
-						record.add(doc.get(key));
-					}
-				}
+    @Override
+    public void prepare(JobContext context, PluginConfig readerConfig) {
+        this.iterable = (FindIterable<Document>) readerConfig.get(MongoDBReaderProperties.ITERATOR);
+        this.columns = readerConfig.getString(MongoDBReaderProperties.COLUMNS).split(",");
+    }
 
-				recordCollector.send(record);
-			}
-		} catch (UnknownHostException e) {
-			throw new HDataException(e);
-		} finally {
-			if (mongoClient != null) {
-				mongoClient.close();
-			}
-		}
-	}
+    @Override
+    public void execute(RecordCollector recordCollector) {
+        if (this.iterable != null) {
+            MongoCursor<Document> cursor = this.iterable.iterator();
+            while (cursor.hasNext()) {
+                Document document = cursor.next();
+                Record r = new DefaultRecord(this.columns.length);
+                for (String column : this.columns) {
+                    r.add(document.get(column));
+                }
+                recordCollector.send(r);
+            }
+        }
+    }
 
-	@Override
-	public void declareOutputFields(OutputFieldsDeclarer declarer) {
-		declarer.declare(fields);
-	}
+    private MongoCollection getMongoCollection(String address, int port, String username, String password, String database, String collection) {
+        ServerAddress serverAddress = new ServerAddress(address, port);
+        MongoClient mongoClient;
+        if (StringUtils.isNotBlank(username) && StringUtils.isNotBlank(password)) {
+            MongoCredential mongoCredential = MongoCredential.createCredential(username, database, password.toCharArray());
+            mongoClient = new MongoClient(serverAddress, Arrays.asList(mongoCredential));
+        } else {
+            mongoClient = new MongoClient(serverAddress);
+        }
+        MongoDatabase db = mongoClient.getDatabase(database);
+        return db.getCollection(collection);
+    }
 
-	@Override
-	public Splitter newSplitter() {
-		return new MongoDBSplitter();
-	}
+    @Override
+    public Splitter newSplitter() {
+        return new Splitter() {
+            @Override
+            public List<PluginConfig> split(JobConfig jobConfig) {
+                List<PluginConfig> ret = new ArrayList();
+
+                PluginConfig readerConfig = jobConfig.getReaderConfig();
+                String address = readerConfig.getString(MongoDBReaderProperties.ADDRESS);
+                int port = readerConfig.getInt(MongoDBReaderProperties.PORT, 27017);
+                String database = readerConfig.getString(MongoDBReaderProperties.DATABASE);
+                String collection = readerConfig.getString(MongoDBReaderProperties.COLLECTION);
+                String username = readerConfig.getString(MongoDBReaderProperties.USERNAME);
+                String password = readerConfig.getString(MongoDBReaderProperties.PASSWORD);
+                String cursorValue = readerConfig.getString(MongoDBReaderProperties.CURSOR_VALUE);
+
+                int parallelism = readerConfig.getParallelism();
+
+                MongoCollection c = getMongoCollection(address, port, username, password, database, collection);
+                Document max = (Document) c.find().sort(new BasicDBObject("_id", -1)).iterator().next();
+                if (max != null) {
+                    String maxId = max.getObjectId("_id").toHexString();
+                    List<Bson> query = new ArrayList<>();
+                    if (StringUtils.isNotBlank(cursorValue)) {
+                        query.add(Filters.gt("_id", new ObjectId(cursorValue)));
+                    }
+                    query.add(Filters.lte("_id", new ObjectId(maxId)));
+                    Long count = c.countDocuments(Filters.and(query));
+                    int batch = MIN_BATCH_SIZE;
+                    int pCount = count.intValue() / parallelism;
+                    if (batch < pCount) {
+                        batch = pCount;
+                    }
+                    for (int i = 0; i < parallelism; i++) {
+                        int skip = i * batch;
+                        if (skip > count) {
+                            break;
+                        }
+                        PluginConfig otherReaderConfig = (PluginConfig) readerConfig.clone();
+                        FindIterable<Document> iterable = c.find(Filters.and(query)).skip(skip).limit(batch);
+                        otherReaderConfig.put(MongoDBReaderProperties.ITERATOR, iterable);
+                        ret.add(otherReaderConfig);
+                    }
+                    jobConfig.getWriterConfig().setInt("parallelism", ret.size());
+                }
+                return ret;
+            }
+        };
+    }
 
 }

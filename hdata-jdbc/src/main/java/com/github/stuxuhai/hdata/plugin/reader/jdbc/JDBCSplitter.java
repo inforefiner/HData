@@ -66,49 +66,6 @@ public class JDBCSplitter extends Splitter {
         }
     }
 
-
-//    private List<PluginConfig> buildPluginConfigs(Connection conn, List<String> sqlList, String splitColumn, PluginConfig readerConfig) {
-//        List<PluginConfig> list = new ArrayList<PluginConfig>();
-//        try {
-//            int parallelism = readerConfig.getParallelism();
-//            long maxFetchSize = readerConfig.getLong(JDBCReaderProperties.MAX_SIZE_PER_FETCH, 5000);
-//            JDBCIterator iterator = new JDBCIterator();
-//
-//            for (String sql : sqlList) {
-//                long[] minAndMax = JdbcUtils.querySplitColumnRange(conn, sql.replace(CONDITIONS, "(1 = 1)"), splitColumn);
-//                long min = minAndMax[0];
-//                long max = minAndMax[1] + 1;
-//                long count = minAndMax[2];
-//                if (count > 0) {
-//                    long step = maxFetchSize;
-//                    if (count > step) {
-//                        long par = count / step;
-//                        if (par < parallelism) {
-//                            par = parallelism;
-//                        }
-//                        long diff = max - min;
-//                        step = diff / par;
-//                    }
-//                    LOG.info("split sql {}, splitColumn {}, min {}, max {}, step {}, parallelism {}", sql, splitColumn, min, max, step, parallelism);
-//                    iterator.add(new JDBCIterator.JDBCUnit(sql, splitColumn, min, max, step, parallelism));
-//                }
-//            }
-//
-//            for (int i = 0; i < parallelism; i++) {
-//                PluginConfig otherReaderConfig = (PluginConfig) readerConfig.clone();
-//                otherReaderConfig.put(JDBCReaderProperties.SQL_ITERATOR, iterator);
-//                otherReaderConfig.put(JDBCReaderProperties.SQL_SEQ, i);
-//                list.add(otherReaderConfig);
-//            }
-//            return list;
-//        } catch (SQLException e) {
-//            throw new HDataException(e);
-//        } finally {
-//            DbUtils.closeQuietly(conn);
-//        }
-//    }
-
-
     private boolean isDateTimeType(String type) {
         if (StringUtils.isNotBlank(type)) {
             type = type.toUpperCase();
@@ -219,13 +176,6 @@ public class JDBCSplitter extends Splitter {
                     sql.append(" AND ");
                     sql.append(where);
                 }
-
-//                if (readerConfig.containsKey(JDBCReaderProperties.ORDER_BY)) {
-//                    String orderBy = readerConfig.getString(JDBCReaderProperties.ORDER_BY);
-//                    sql.append(" ORDER BY ");
-//                    sql.append(orderBy);
-//                    sql.append(" ASC ");
-//                }
 
                 String sqlExpr = sql.toString();
 

@@ -85,6 +85,7 @@
         <module>hdata-socket</module>
 		<module>hdata-ftp</module>
 		<module>hdata-es</module>
+		<module>hdata-mongodb</module>
 		<!--
 
         <module>hdata-csv</module>
