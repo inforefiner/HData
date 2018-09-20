@@ -104,7 +104,7 @@ public class MongoDBReader extends Reader {
                             break;
                         }
                         PluginConfig otherReaderConfig = (PluginConfig) readerConfig.clone();
-                        FindIterable<Document> iterable = c.find(Filters.and(query)).skip(skip).limit(batch);
+                        FindIterable<Document> iterable = c.find(Filters.and(querys)).skip(skip).limit(batch);
                         otherReaderConfig.put(MongoDBReaderProperties.ITERATOR, iterable);
                         ret.add(otherReaderConfig);
                     }
