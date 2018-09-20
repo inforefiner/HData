@@ -9,6 +9,7 @@ public class MongoDBReaderProperties {
 	public static final String DATABASE = "database";
 	public static final String COLLECTION = "collection";
 	public static final String COLUMNS = "columns";
+	public static final String QUERY = "query";
 
 	public static final String CURSOR_TYPE = "cursor.type";
 	public static final String CURSOR_VALUE = "cursor.value";

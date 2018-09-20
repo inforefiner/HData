@@ -73,6 +73,7 @@ public class MongoDBReader extends Reader {
                 int port = readerConfig.getInt(MongoDBReaderProperties.PORT, 27017);
                 String database = readerConfig.getString(MongoDBReaderProperties.DATABASE);
                 String collection = readerConfig.getString(MongoDBReaderProperties.COLLECTION);
+                String query = readerConfig.getString(MongoDBReaderProperties.QUERY);
                 String username = readerConfig.getString(MongoDBReaderProperties.USERNAME);
                 String password = readerConfig.getString(MongoDBReaderProperties.PASSWORD);
                 String cursorValue = readerConfig.getString(MongoDBReaderProperties.CURSOR_VALUE);
@@ -83,12 +84,15 @@ public class MongoDBReader extends Reader {
                 Document max = (Document) c.find().sort(new BasicDBObject("_id", -1)).iterator().next();
                 if (max != null) {
                     String maxId = max.getObjectId("_id").toHexString();
-                    List<Bson> query = new ArrayList<>();
-                    if (StringUtils.isNotBlank(cursorValue)) {
-                        query.add(Filters.gt("_id", new ObjectId(cursorValue)));
+                    List<Bson> querys = new ArrayList<>();
+                    if (StringUtils.isNotBlank(query)) {
+                        querys.add(Filters.where(query));
                     }
-                    query.add(Filters.lte("_id", new ObjectId(maxId)));
-                    Long count = c.countDocuments(Filters.and(query));
+                    if (StringUtils.isNotBlank(cursorValue)) {
+                        querys.add(Filters.gt("_id", new ObjectId(cursorValue)));
+                    }
+                    querys.add(Filters.lte("_id", new ObjectId(maxId)));
+                    Long count = c.countDocuments(Filters.and(querys));
                     int batch = MIN_BATCH_SIZE;
                     int pCount = count.intValue() / parallelism;
                     if (batch < pCount) {
