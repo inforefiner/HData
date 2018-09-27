@@ -1,23 +1,13 @@
 #!/usr/bin/env bash
 
+if [ -z "$HDATA_HOME" ]
+then
+  HDATA_HOME=`pwd`
+fi
 
-CDPATH=""
-SCRIPT="$0"
-
-while [ -h "$SCRIPT" ] ; do
-  ls=`ls -ld "$SCRIPT"`
-  link=`expr "$ls" : '.*-> \(.*\)$'`
-  if expr "$link" : '/.*' > /dev/null; then
-    SCRIPT="$link"
-  else
-    SCRIPT=`dirname "$SCRIPT"`/"$link"
-  fi
-done
-
-HDATA_HOME=`dirname "$SCRIPT"`/..
-HDATA_HOME=`cd "$HDATA_HOME"; pwd`
 HDATA_LIB_DIR=$HDATA_HOME/lib
 HDATA_CONF_DIR=$HDATA_HOME/conf
+HDATA_PLUGINS_DIR=$HDATA_HOME/plugins
 
 if [ -x "$JAVA_HOME/bin/java" ]; then
     JAVA="$JAVA_HOME/bin/java"
@@ -35,6 +25,12 @@ for f in $HDATA_LIB_DIR/*.jar; do
     HDATA_CLASSPATH=${HDATA_CLASSPATH}:$f;
 done
 
+export HADOOP_CONF_DIR=$HADOOP_CONF_DIR
+echo "HADOOP_CONF_DIR = $HADOOP_CONF_DIR"
+
+export HADOOP_USER_NAME=$HADOOP_USER_NAME
+echo "HADOOP_USER_NAME = $HADOOP_USER_NAME"
+
 JAVA_OPTS="$JAVA_OPTS -Xss256k"
 JAVA_OPTS="$JAVA_OPTS -Xms2G -Xmx2G -Xmn1024M"
 JAVA_OPTS="$JAVA_OPTS -XX:+UseParNewGC"
@@ -47,10 +43,11 @@ JAVA_OPTS="$JAVA_OPTS -XX:+UseCMSInitiatingOccupancyOnly"
 JAVA_OPTS="$JAVA_OPTS -XX:+HeapDumpOnOutOfMemoryError"
 JAVA_OPTS="$JAVA_OPTS -XX:SoftRefLRUPolicyMSPerMB=0"
 
+JAVA_OPTS="$JAVA_OPTS -Dhdata.plugins.path=$HDATA_PLUGINS_DIR"
 JAVA_OPTS="$JAVA_OPTS -Dhdata.conf.dir=$HDATA_CONF_DIR"
 JAVA_OPTS="$JAVA_OPTS -Dlog4j.configurationFile=file:///$HDATA_CONF_DIR/log4j2.xml"
 
 MAIN_CLASS="com.github.stuxuhai.hdata.CliDriver"
 
-echo $JAVA_OPTS
+#echo $JAVA_OPTS
 exec "$JAVA" $JAVA_OPTS -cp "$HDATA_CLASSPATH" $MAIN_CLASS "$@"
