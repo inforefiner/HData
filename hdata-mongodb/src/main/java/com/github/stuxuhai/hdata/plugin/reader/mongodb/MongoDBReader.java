@@ -41,7 +41,22 @@ public class MongoDBReader extends Reader {
                 Document document = cursor.next();
                 Record r = new DefaultRecord(this.columns.length);
                 for (String column : this.columns) {
-                    r.add(document.get(column));
+                    Object obj = document.get(column);
+                    String str = "";
+                    if (obj instanceof Document) {
+                        Document doc = (Document) obj;
+                        str = doc.toJson();
+                    } else if (obj instanceof List) {
+                        List<Document> arr = (List) obj;
+                        List<String> ret = new ArrayList();
+                        for (Document doc : arr) {
+                            ret.add(doc.toJson());
+                        }
+                        str = ret.toString();
+                    } else {
+                        str = obj.toString();
+                    }
+                    r.add(str);
                 }
                 recordCollector.send(r);
             }
@@ -76,6 +91,7 @@ public class MongoDBReader extends Reader {
                 String query = readerConfig.getString(MongoDBReaderProperties.QUERY);
                 String username = readerConfig.getString(MongoDBReaderProperties.USERNAME);
                 String password = readerConfig.getString(MongoDBReaderProperties.PASSWORD);
+//                String cursorColumn = readerConfig.getString(MongoDBReaderProperties.CURSOR_COLUMN);
                 String cursorValue = readerConfig.getString(MongoDBReaderProperties.CURSOR_VALUE);
 
                 int parallelism = readerConfig.getParallelism();
@@ -86,7 +102,7 @@ public class MongoDBReader extends Reader {
                     String maxId = max.getObjectId("_id").toHexString();
                     List<Bson> querys = new ArrayList<>();
                     if (StringUtils.isNotBlank(query)) {
-                        querys.add(Filters.where(query));
+                        querys.add(Filters.expr(Document.parse(query)));
                     }
                     if (StringUtils.isNotBlank(cursorValue)) {
                         querys.add(Filters.gt("_id", new ObjectId(cursorValue)));

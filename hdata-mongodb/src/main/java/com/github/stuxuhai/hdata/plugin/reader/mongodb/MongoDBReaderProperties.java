@@ -13,6 +13,7 @@ public class MongoDBReaderProperties {
 
 	public static final String CURSOR_TYPE = "cursor.type";
 	public static final String CURSOR_VALUE = "cursor.value";
+	public static final String CURSOR_COLUMN = "cursor.column";
 
 	public static final String ITERATOR = "iterator";
 

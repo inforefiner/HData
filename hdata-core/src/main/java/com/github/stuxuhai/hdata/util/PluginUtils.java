@@ -20,7 +20,7 @@ public class PluginUtils {
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(PluginUtils.class);
 
     private static List<URL> listFileByPluginName(String pluginName) throws MalformedURLException {
-        String pluginsPath = System.getenv("hdata.plugins.path");
+        String pluginsPath = System.getProperty("hdata.plugins.path");
         if (pluginsPath == null) {
             pluginsPath = PluginUtils.class.getProtectionDomain().getCodeSource().getLocation().getPath().replaceAll("/lib/.*\\.jar", "")
                     + "/plugins";
