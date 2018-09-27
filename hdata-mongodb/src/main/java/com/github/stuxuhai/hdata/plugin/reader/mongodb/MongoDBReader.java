@@ -48,10 +48,14 @@ public class MongoDBReader extends Reader {
                             Document doc = (Document) obj;
                             str = doc.toJson();
                         } else if (obj instanceof List) {
-                            List<Document> arr = (List) obj;
+                            List arr = (List) obj;
                             List<String> ret = new ArrayList();
-                            for (Document doc : arr) {
-                                ret.add(doc.toJson());
+                            for (Object _obj : arr) {
+                                if (_obj instanceof Document) {
+                                    ret.add(((Document) _obj).toJson());
+                                } else {
+                                    ret.add(_obj.toString());
+                                }
                             }
                             str = ret.toString();
                         } else {
