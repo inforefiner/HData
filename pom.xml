@@ -86,7 +86,8 @@
 		<module>hdata-ftp</module>
 		<module>hdata-es</module>
 		<module>hdata-mongodb</module>
-		<!--
+		<module>hdata-cloud</module>
+        <!--
 
         <module>hdata-csv</module>
 
