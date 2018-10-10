@@ -75,8 +75,8 @@ public class FTPUtils {
     public static void main(String[] args) {
 
         try {
-            FTPClient client = getFtpClient("192.168.1.84", 21, "europa", "europa");
-            FTPFile[] files = client.listFiles("ftp_dir2");
+            FTPClient client = getFtpClient("39.106.143.200", 21, "wordpress", "123456");
+            FTPFile[] files = client.listFiles(".");
             for (FTPFile f: files){
                 System.out.println(f.toFormattedString());
             }

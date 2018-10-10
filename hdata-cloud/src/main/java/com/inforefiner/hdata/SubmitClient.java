@@ -142,7 +142,7 @@ public class SubmitClient {
     private long clientTimeout = 600000;
 
     // flag to indicate whether to keep containers across application attempts.
-    private boolean keepContainers = false;
+    private boolean keepContainers = true;
 
     private long attemptFailuresValidityInterval = -1;
 
@@ -423,12 +423,11 @@ public class SubmitClient {
 
 
         receiveLogPort = NetUtils.getFreeSocketPort();
-        receiveLogHost = NetUtils.getHostname();
-        if (receiveLogHost == null) {
-            receiveLogHost = getLocalAddress();
-        }
+        receiveLogHost = getLocalAddress();
 
-//        shellCommand += " | nc " + receiveLogHost + " " + receiveLogPort;
+        LOG.info("receiveLogHost = " + receiveLogHost + ", receiveLogPort = " + receiveLogPort);
+
+        shellCommand += " | nc " + receiveLogHost + " " + receiveLogPort;
 
         return true;
     }
@@ -727,8 +726,8 @@ public class SubmitClient {
         // TODO
         // Try submitting the same request again
         // app submission failure?
-//        Thread t = new Thread(new LogReceiver());
-//        t.start();
+        Thread t = new Thread(new LogReceiver());
+        t.start();
         // Monitor the application
         return monitorApplication(appId);
     }
@@ -795,12 +794,12 @@ public class SubmitClient {
 
             // Get application report for the appId we are interested in
             ApplicationReport report = yarnClient.getApplicationReport(appId);
-
-            List<ContainerReport> containerReports = yarnClient.getContainers(report.getCurrentApplicationAttemptId());
-            for (ContainerReport containerReport : containerReports) {
-                String logUrl = containerReport.getLogUrl();
-                LOG.info("Container log url = " + logUrl + ", host = ");
-            }
+//
+//            List<ContainerReport> containerReports = yarnClient.getContainers(report.getCurrentApplicationAttemptId());
+//            for (ContainerReport containerReport : containerReports) {
+//                String logUrl = containerReport.getLogUrl();
+//                LOG.info("Container log url = " + logUrl + ", host = ");
+//            }
 
 //            LOG.info("Got application report from ASM for"
 //                    + ", appId=" + appId.getId()

@@ -164,6 +164,10 @@ public class JDBCSplitter extends Splitter {
                 if(JdbcUtils.isDB2(driver)){
                     sql.append(", ROW_NUMBER() OVER() AS RN");
                 }
+                if(JdbcUtils.isSqlServer(driver)){
+                    sql.append(", ROW_NUMBER() OVER(order by id asc) AS RN");
+                }
+
 
                 sql.append(" FROM ");
                 sql.append(keywordEscaper).append(tableName).append(keywordEscaper);

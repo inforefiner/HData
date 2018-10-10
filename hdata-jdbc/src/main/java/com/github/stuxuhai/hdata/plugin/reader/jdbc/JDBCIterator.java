@@ -168,7 +168,9 @@ public class JDBCIterator {
                 pagingSql = "SELECT " + selectColumn + " FROM (" + currentSql.replace(JDBCSplitter.CONDITIONS, "(1 = 1)") + ") WHERE RN > " + tempStart + " and RN <= " + tempEnd;
             } else if(JdbcUtils.isPG(driver)){
                 pagingSql = currentSql.replace(JDBCSplitter.CONDITIONS, "(1 = 1)") + " LIMIT " + step + " OFFSET " + tempStart;
-            } else {
+            } else if(JdbcUtils.isSqlServer(driver)){
+                pagingSql = "SELECT top " + step  + " " + selectColumn + " FROM (" + currentSql.replace(JDBCSplitter.CONDITIONS, "(1 = 1)") + ") TEMP WHERE RN > " + tempStart;
+            }else {
                 pagingSql = currentSql.replace(JDBCSplitter.CONDITIONS, "(1 = 1)") + " LIMIT " + tempStart + "," + step;
             }
 
