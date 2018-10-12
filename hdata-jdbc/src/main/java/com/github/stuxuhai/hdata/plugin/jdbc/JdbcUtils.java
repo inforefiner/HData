@@ -196,6 +196,20 @@ public class JdbcUtils {
         return minAndMax;
     }
 
+    public static String getSplitKey(Connection conn, String catalog, String schema, String table) throws SQLException {
+        String splitKey = null;
+        ResultSet rs = conn.getMetaData().getPrimaryKeys(catalog, schema, table);
+        if (rs.next()) {
+            splitKey = rs.getString("COLUMN_NAME");
+        } else {
+            rs = conn.getMetaData().getColumns(catalog, schema, table, null);
+            if (rs.next()) {
+                splitKey = rs.getString("COLUMN_NAME");
+            }
+        }
+        return splitKey;
+    }
+
     /**
      * 查询表数值类型的主键
      *
@@ -214,7 +228,6 @@ public class JdbcUtils {
             primaryKeys.add(rs.getString("COLUMN_NAME"));
         }
         rs.close();
-
         if (primaryKeys.size() > 0) {
             Map<String, Integer> map = getColumnTypes(conn, table, keywordEscaper);
             for (String pk : primaryKeys) {
@@ -223,7 +236,6 @@ public class JdbcUtils {
                 }
             }
         }
-
         return null;
     }
 
@@ -287,8 +299,8 @@ public class JdbcUtils {
     public static void main(String[] args) {
 
         try {
-            Connection conn = JdbcUtils.getConnection("oracle.jdbc.driver.OracleDriver", "jdbc:oracle:thin:@node6:1521:orcl", "carpo", "123456");
-            String str = getMaxValue(conn, "SELECT * from TEST_TYPE", "U");
+            Connection conn = JdbcUtils.getConnection("com.microsoft.sqlserver.jdbc.SQLServerDriver", "jdbc:sqlserver://192.168.2.244:1433;databaseName=master", "sa", "123456");
+            String str = getSplitKey(conn, conn.getCatalog(), conn.getSchema(), "UserInfo");
             System.out.println(str);
         } catch (Exception e) {
             e.printStackTrace();
