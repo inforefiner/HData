@@ -51,8 +51,8 @@
 			<class>com.github.stuxuhai.hdata.plugin.reader.socket.SocketReader</class>
 		</reader>
 		<reader>
-			<name>es</name>
-			<class>com.github.stuxuhai.hdata.plugin.reader.es.EsReader</class>
+			<name>es5.6</name>
+			<class>com.github.stuxuhai.hdata.plugin.reader.es5_6.EsReader</class>
 		</reader>
 	</readers>
 

@@ -3,6 +3,7 @@ package com.github.stuxuhai.hdata.plugin.reader.jdbc;
 import com.github.stuxuhai.hdata.api.JobConfig;
 import com.github.stuxuhai.hdata.api.PluginConfig;
 import com.github.stuxuhai.hdata.api.Splitter;
+import com.github.stuxuhai.hdata.exception.HDataException;
 import com.github.stuxuhai.hdata.plugin.jdbc.JdbcUtils;
 import com.github.stuxuhai.hdata.util.NumberUtils;
 import com.google.common.base.Preconditions;
@@ -124,7 +125,19 @@ public class JDBCSplitter extends Splitter {
 
         try {
             conn = JdbcUtils.getConnection(driver, url, username, password);
-            String splitKey = JdbcUtils.getSplitKey(conn, conn.getCatalog(), conn.getSchema(), table);
+            String catalog = null;
+            try {
+                catalog = conn.getCatalog();
+            } catch (Throwable e) {
+//                e.printStackTrace();
+            }
+            String schema = null;
+            try {
+                schema = conn.getSchema();
+            } catch (Throwable e) {
+//                e.printStackTrace();
+            }
+            String splitKey = JdbcUtils.getSplitKey(conn, catalog, schema, table);
 
             if (JdbcUtils.isOracle(driver)) {
                 sql.append(", ROWNUM RN");
@@ -181,7 +194,7 @@ public class JDBCSplitter extends Splitter {
             readerConfig.put(JDBCReaderProperties.SQL, sqlList);
 
         } catch (Throwable e) {
-            e.printStackTrace();
+            throw new HDataException(e);
         } finally {
             DbUtils.closeQuietly(conn);
         }

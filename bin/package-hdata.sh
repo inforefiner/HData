@@ -62,7 +62,10 @@ do
   rm -rf $HDATA_BUILD_HDATA_DIR/plugins/$i
 done
 
-FINAL_NAME=hdata-`date +%y-%m-%d`.zip
-zip -b $HDATA_BUILD_DIR -r $FINAL_NAME hdata
+if [ "$1" = "zip" ]; then
+  FINAL_NAME=hdata-`date +%y-%m-%d`.zip
+  zip -b $HDATA_BUILD_DIR -r $FINAL_NAME hdata
+fi
+
 
 

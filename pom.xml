@@ -9,8 +9,8 @@
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<maven.compiler.source>1.7</maven.compiler.source>
-		<maven.compiler.target>1.7</maven.compiler.target>
+		<maven.compiler.source>1.8</maven.compiler.source>
+		<maven.compiler.target>1.8</maven.compiler.target>
 	</properties>
 
 	<dependencyManagement>
@@ -84,7 +84,7 @@
         <module>hdata-console</module>
         <module>hdata-socket</module>
 		<module>hdata-ftp</module>
-		<module>hdata-es</module>
+		<module>hdata-es5.6</module>
 		<module>hdata-mongodb</module>
 		<module>hdata-cloud</module>
         <!--
