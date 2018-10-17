@@ -1,6 +1,5 @@
 package com.github.stuxuhai.hdata.plugin.reader.es5_6;
 
-import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
@@ -9,9 +8,6 @@ import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.transport.client.PreBuiltTransportClient;
 
 import java.net.InetAddress;
-import java.util.Date;
-
-import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
 public class EsTest {
 
@@ -67,19 +63,19 @@ public class EsTest {
 //            System.out.println(sources);
 //        }
 
-        for (int i = 0; i < 234; i += 1) {
-            IndexResponse response = client.prepareIndex(index, indexType, String.valueOf(i))
-                    .setSource(jsonBuilder()
-                            .startObject()
-                            .field("user", "joey#" + i)
-                            .field("age", i)
-                            .field("postDate", new Date())
-                            .field("message", "trying out Elasticsearch#" + i)
-                            .endObject()
-                    )
-                    .get();
-            System.out.println("doc #" + response.getId() + " created");
-        }
+//        for (int i = 0; i < 234; i += 1) {
+//            IndexResponse response = client.prepareIndex(index, indexType, String.valueOf(i))
+//                    .setSource(jsonBuilder()
+//                            .startObject()
+//                            .field("user", "joey#" + i)
+//                            .field("age", i)
+//                            .field("postDate", new Date())
+//                            .field("message", "trying out Elasticsearch#" + i)
+//                            .endObject()
+//                    )
+//                    .get();
+//            System.out.println("doc #" + response.getId() + " created");
+//        }
 
 //        IndexResponse response = client.prepareIndex("twitter", "tweet", "66")
 //                .setSource(jsonBuilder()

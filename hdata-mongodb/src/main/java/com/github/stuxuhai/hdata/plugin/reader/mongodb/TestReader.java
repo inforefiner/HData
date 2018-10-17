@@ -5,17 +5,20 @@ import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
-import org.bson.Document;
+import org.bson.conversions.Bson;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class TestReader {
 
 
     public static void main(String[] args) {
 
-        int a = 8;
-        int b = 3;
-        int d = (int) Math.ceil((double) a / (double) b);
-        System.out.println(d);
+//        int a = 8;
+//        int b = 3;
+//        int d = (int) Math.ceil((double) a / (double) b);
+//        System.out.println(d);
 
 
         MongoClient client = MongoClients.create("mongodb://europa:europa@192.168.1.188:27017");
@@ -32,9 +35,13 @@ public class TestReader {
 //        MongoClient client = new MongoClient(serverAddress, Arrays.asList(MongoCredential.createCredential("zkhh", "wx", "zkhh123".toCharArray())), MongoClientOptions.builder().build());
         MongoDatabase database = client.getDatabase("test");
         MongoCollection c = database.getCollection("test1");
+        List<Bson> querys = new ArrayList<>();
+        querys.add(Filters.lte("id", "8"));
+        Long count = c.countDocuments(Filters.and(querys));
+        System.out.println(count);
 //        c.find()
 //        Document.parse("{\"name\": \"}");
-        System.out.println(c.countDocuments(Filters.expr(Document.parse("{ $eq: [\"$name\", \"Anya\"] }"))));
+//        System.out.println(c.countDocuments(Filters.expr(Document.parse("{ $eq: [\"$name\", \"Anya\"] }"))));
 //        String cursorValue = "";
 //
 //        Document max = (Document) c.find().sort(new BasicDBObject("_id", -1)).iterator().next();

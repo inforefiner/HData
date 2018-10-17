@@ -36,6 +36,7 @@ public class JDBCSplitter extends Splitter {
     private List<PluginConfig> buildPluginConfigs(Connection conn, List<String> sqlList, String splitColumn, PluginConfig readerConfig) throws Throwable {
         List<PluginConfig> list = new ArrayList<PluginConfig>();
         String driver = readerConfig.getString(JDBCReaderProperties.DRIVER);
+        String table = readerConfig.getString(JDBCReaderProperties.TABLE);
         String columns = readerConfig.getString(JDBCReaderProperties.COLUMNS);
         int parallelism = readerConfig.getParallelism();
         long maxFetchSize = readerConfig.getLong(JDBCReaderProperties.MAX_SIZE_PER_FETCH, 10000);
@@ -44,7 +45,7 @@ public class JDBCSplitter extends Splitter {
             long count = JdbcUtils.getCount(conn, sql.replace(CONDITIONS, "(1 = 1)"));
             if (count > 0) {
                 long step = maxFetchSize;
-                iterator.add(new JDBCIterator.JDBCUnit2(driver, sql, columns, splitColumn, 0, count, step, parallelism));
+                iterator.add(new JDBCIterator.JDBCUnit2(driver, sql, columns, splitColumn, table,0, count, step, parallelism));
             }
         }
         for (int i = 0; i < parallelism; i++) {
@@ -145,9 +146,9 @@ public class JDBCSplitter extends Splitter {
             if (JdbcUtils.isDB2(driver)) {
                 sql.append(", ROW_NUMBER() OVER() AS RN");
             }
-            if (JdbcUtils.isSqlServer(driver)) {
-                sql.append(", ROW_NUMBER() OVER(ORDER BY " + splitKey + " ASC) AS RN");
-            }
+//            if (JdbcUtils.isSqlServer(driver)) {
+//                sql.append(", ROW_NUMBER() OVER(ORDER BY " + splitKey + " ASC) AS RN");
+//            }
 
             sql.append(" FROM ");
             sql.append(keywordEscaper).append(table).append(keywordEscaper);
