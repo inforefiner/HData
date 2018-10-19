@@ -332,7 +332,7 @@ public class SubmitClient {
             keepContainers = true;
         }
 
-        appName = cliParser.getOptionValue("appname", "DistributedShell");
+        appName = cliParser.getOptionValue("appname", "hdata-cloud-job-" + System.currentTimeMillis());
         amPriority = Integer.parseInt(cliParser.getOptionValue("priority", "0"));
         amQueue = cliParser.getOptionValue("queue", "default");
         amMemory = Integer.parseInt(cliParser.getOptionValue("master_memory", "10"));

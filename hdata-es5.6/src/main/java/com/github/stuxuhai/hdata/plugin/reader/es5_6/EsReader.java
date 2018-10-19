@@ -115,8 +115,8 @@ public class EsReader extends Reader {
                 if (StringUtils.isNotBlank(filter)) {
                     String[] arr = filter.split(";");
                     for (String str : arr) {
-                        String[] arr2 = str.split(":");
-                        queryBuilders.add(QueryBuilders.wildcardQuery(arr2[0], arr2[1]));
+                        String[] arr2 = str.split("=");
+                        queryBuilders.add(QueryBuilders.termQuery(arr2[0], arr2[1]));
                     }
                 }
                 if (StringUtils.isNotBlank(cursorColumn)) {
