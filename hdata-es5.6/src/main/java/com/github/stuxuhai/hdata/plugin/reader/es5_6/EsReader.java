@@ -4,16 +4,17 @@ import com.github.stuxuhai.hdata.api.*;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.action.search.SearchType;
+import org.elasticsearch.action.search.SearchScrollRequestBuilder;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
+import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.metrics.max.InternalMax;
 import org.elasticsearch.transport.client.PreBuiltTransportClient;
@@ -56,20 +57,30 @@ public class EsReader extends Reader {
 
     @Override
     public void execute(RecordCollector recordCollector) {
-        int start = 0;
-        int step = 1000;
+        TimeValue timeValue = new TimeValue(30000);
+
+        // 搜索条件
+        SearchRequestBuilder searchRequestBuilder = client.prepareSearch();
+        searchRequestBuilder.setIndices(index);
+        searchRequestBuilder.setTypes(indexType);
+        searchRequestBuilder.setScroll(timeValue);
+        searchRequestBuilder.setQuery(queryBuilder);
+
+        // 执行
+        SearchResponse searchResponse = searchRequestBuilder.get();
+        String scrollId = searchResponse.getScrollId();
+
+        SearchScrollRequestBuilder searchScrollRequestBuilder;
+        SearchResponse response;
         while (true) {
-            SearchResponse response = client
-                    .prepareSearch(index)
-                    .setTypes(indexType)
-                    .setSearchType(SearchType.DEFAULT)
-                    .setQuery(queryBuilder)
-                    .setFrom(start)
-                    .setSize(step)
-                    .get();
-            SearchHits searchHits = response.getHits();
-            SearchHit[] arr = searchHits.getHits();
-            if (arr.length == 0) break;
+            searchScrollRequestBuilder = client.prepareSearchScroll(scrollId);
+            searchScrollRequestBuilder.setScroll(timeValue);
+            response = searchScrollRequestBuilder.get();
+            // 每次返回下一个批次结果 直到没有结果返回时停止 即hits数组空时
+            if (response.getHits().getHits().length == 0) {
+                break;
+            } // if
+            SearchHit[] arr = response.getHits().getHits();
             for (SearchHit hit : arr) {
                 Map<String, Object> sources = hit.getSource();
                 Record record = new DefaultRecord(columns.length);
@@ -78,7 +89,7 @@ public class EsReader extends Reader {
                 }
                 recordCollector.send(record);
             }
-            start = start + step;
+            scrollId = response.getScrollId();
         }
     }
 
