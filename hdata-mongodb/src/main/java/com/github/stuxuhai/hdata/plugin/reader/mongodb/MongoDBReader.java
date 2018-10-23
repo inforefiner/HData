@@ -11,6 +11,7 @@ import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
 import org.apache.commons.lang3.StringUtils;
+import org.bson.BsonTimestamp;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 
@@ -18,6 +19,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 
 public class MongoDBReader extends Reader {
@@ -43,26 +45,7 @@ public class MongoDBReader extends Reader {
                 Record r = new DefaultRecord(this.columns.length);
                 for (String column : this.columns) {
                     Object obj = document.get(column);
-                    String str = "";
-                    if (obj != null) {
-                        if (obj instanceof Document) {
-                            Document doc = (Document) obj;
-                            str = doc.toJson();
-                        } else if (obj instanceof List) {
-                            List arr = (List) obj;
-                            List<String> ret = new ArrayList();
-                            for (Object _obj : arr) {
-                                if (_obj instanceof Document) {
-                                    ret.add(((Document) _obj).toJson());
-                                } else {
-                                    ret.add(_obj.toString());
-                                }
-                            }
-                            str = ret.toString();
-                        } else {
-                            str = obj.toString();
-                        }
-                    }
+                    String str = DataConvert.getInstance().convert(obj);
                     r.add(str);
                 }
                 recordCollector.send(r);
@@ -83,20 +66,30 @@ public class MongoDBReader extends Reader {
         return db.getCollection(collection);
     }
 
-    private SimpleDateFormat sdf = new SimpleDateFormat("EEE MMM dd HH:mm:ss z yyyy");
+    private SimpleDateFormat timeFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
 
     private Object convertCursorValue(String value, String cursorType) {
         if (cursorType != null) {
             switch (cursorType) {
+                case "short":
                 case "int":
                     return Integer.valueOf(value);
+                case "decimal":
+                case "double":
                 case "float":
                     return Float.valueOf(value);
                 case "bigint":
                     return Long.valueOf(value);
                 case "date":
                     try {
-                        return sdf.parse(value);
+                        return timeFormat.parse(value);
+                    } catch (ParseException e) {
+                        e.printStackTrace();
+                    }
+                case "timestamp":
+                    try {
+                        Date time = timeFormat.parse(value);
+                        return new BsonTimestamp((int) (time.getTime() / 1000), 1);
                     } catch (ParseException e) {
                         e.printStackTrace();
                     }
@@ -133,7 +126,7 @@ public class MongoDBReader extends Reader {
                     Document max = (Document) c.find().sort(new BasicDBObject(cursorColumn, -1)).iterator().next();
                     if (max != null) {
                         Object maxValue = max.get(cursorColumn);
-                        jobConfig.setString("CursorValue", maxValue.toString());
+                        jobConfig.setString("CursorValue", DataConvert.getInstance().convert(maxValue));
                         querys.add(Filters.lte(cursorColumn, maxValue));
                     }
                     if (StringUtils.isNotBlank(cursorValue)) {

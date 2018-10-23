@@ -107,6 +107,7 @@ public class FTPReader extends Reader {
                         e.printStackTrace();
                     }
                     Record record = new DefaultRecord(3);
+                    record.add(filePath);
                     record.add(fullPath);
                     record.add(file.getSize());
                     record.add(file.getModificationTime());
@@ -122,6 +123,7 @@ public class FTPReader extends Reader {
                     if (!sender.exists(file.getSize(), file.getModificationTime())) {
                         sender.send();
                         Record record = new DefaultRecord(3);
+                        record.add(filePath);
                         record.add(fullPath);
                         record.add(file.getSize());
                         record.add(file.getModificationTime());

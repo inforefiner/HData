@@ -1,19 +1,15 @@
 package com.github.stuxuhai.hdata.plugin.reader.mongodb;
 
-import com.mongodb.client.MongoClient;
-import com.mongodb.client.MongoClients;
-import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoDatabase;
-import com.mongodb.client.model.Filters;
-import org.bson.conversions.Bson;
+import com.mongodb.client.*;
+import org.bson.Document;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 
 public class TestReader {
 
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Throwable {
 
 //        int a = 8;
 //        int b = 3;
@@ -34,11 +30,11 @@ public class TestReader {
 //        MongoCredential.createPlainCredential()
 //        MongoClient client = new MongoClient(serverAddress, Arrays.asList(MongoCredential.createCredential("zkhh", "wx", "zkhh123".toCharArray())), MongoClientOptions.builder().build());
         MongoDatabase database = client.getDatabase("test");
-        MongoCollection c = database.getCollection("test1");
-        List<Bson> querys = new ArrayList<>();
-        querys.add(Filters.lte("id", "8"));
-        Long count = c.countDocuments(Filters.and(querys));
-        System.out.println(count);
+        MongoCollection collection = database.getCollection("timeType");
+//        List<Bson> querys = new ArrayList<>();
+//        querys.add(Filters.lte("id", "8"));
+//        Long count = c.countDocuments(Filters.and(querys));
+//        System.out.println(count);
 //        c.find()
 //        Document.parse("{\"name\": \"}");
 //        System.out.println(c.countDocuments(Filters.expr(Document.parse("{ $eq: [\"$name\", \"Anya\"] }"))));
@@ -75,9 +71,19 @@ public class TestReader {
 //        collection.
 
 //        Bson sort = new BasicDBObject("_id", -1);
-//        FindIterable<Document> iterable = collection.find().sort(sort).max(new BasicDBObject("_id", "5ab483cdcff8d680186525d6")).limit(10);
-//        FindIterable<Document> iterable = collection.find(Filters.gt("_id", new ObjectId("58733910cb2018ec1e1a0c9f"))).sort(query);
-//        MongoCursor<Document> cursor = iterable.iterator();
+//        FindIterable<Document> iterable = collection.find().limit(10);
+        DateFormat timeFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+//        String str = "2018-10-17 15:56:00";
+//        Date time = timeFormat.parse(str);
+//        BsonTimestamp bsonTimestamp = new BsonTimestamp((int) (time.getTime() / 1000), 1);
+        FindIterable<Document> iterable = collection.find();
+//        FindIterable<Document> iterable = collection.find(Filters.gt("time", bsonTimestamp));
+        MongoCursor<Document> cursor = iterable.iterator();
+        while (cursor.hasNext()) {
+            Document document = cursor.next();
+            Object data = document.get("time");
+            System.out.println("json = " + DataConvert.getInstance().convert(data));
+        }
 //        while (cursor.hasNext()) {
 //            Document document = cursor.next();
 //            ObjectId id = (ObjectId)document.get("_id");

@@ -25,6 +25,8 @@ public class ConsoleWriter extends Writer {
     @Override
     public void prepare(JobContext context, PluginConfig writerConfig) {
         LOG.info("ConsoleWriter : " + Thread.currentThread().getName() + " prepare writing ...");
+        String cursorValue = context.getJobConfig().getString("CursorValue");
+        LOG.info("CursorValue : " + cursorValue);
         isDebug = writerConfig.getBoolean("debug", false);
     }
 

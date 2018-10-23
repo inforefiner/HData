@@ -42,10 +42,11 @@ public class FileRpcService implements RpcCallable {
 
     @Override
     public void execute(Record record) {
-        String path = (String) record.get(0);
-        long size = (long) record.get(1);
-        long modificationTime = (long) record.get(2);
-        int ret = fileService.execute(tenantId, taskId, channelId, path, size, modificationTime);
+        String orgPath = (String) record.get(0);
+        String dstPath = (String) record.get(1);
+        long size = (long) record.get(2);
+        long modificationTime = (long) record.get(3);
+        int ret = fileService.execute(tenantId, taskId, channelId, orgPath, dstPath, size, modificationTime);
         if (ret == -1) {
             logger.error("task {} channel {} has error when flush data. the data server maybe lost.", taskId, channelId);
         }
