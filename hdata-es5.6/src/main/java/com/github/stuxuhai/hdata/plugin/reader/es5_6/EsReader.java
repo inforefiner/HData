@@ -49,7 +49,7 @@ public class EsReader extends Reader {
     public void prepare(JobContext context, PluginConfig readerConfig) {
         index = readerConfig.getString(EsReaderProperties.INDEX);
         indexType = readerConfig.getString(EsReaderProperties.INDEX_TYPE);
-        columns = readerConfig.getString(EsReaderProperties.COLUMNS).split(",");
+        columns = StringUtils.splitPreserveAllTokens(readerConfig.getString(EsReaderProperties.COLUMNS), ",");
         queryBuilder = (QueryBuilder) readerConfig.get(EsReaderProperties.QUERY);
         client = getClient(readerConfig);
         LOG.info("ES client init done.");
@@ -59,36 +59,39 @@ public class EsReader extends Reader {
     public void execute(RecordCollector recordCollector) {
         TimeValue timeValue = new TimeValue(30000);
 
-        // 搜索条件
-        SearchRequestBuilder searchRequestBuilder = client.prepareSearch();
-        searchRequestBuilder.setIndices(index);
-        searchRequestBuilder.setTypes(indexType);
-        searchRequestBuilder.setScroll(timeValue);
-        searchRequestBuilder.setQuery(queryBuilder);
-
-        // 执行
-        SearchResponse searchResponse = searchRequestBuilder.get();
-        String scrollId = searchResponse.getScrollId();
-
         SearchScrollRequestBuilder searchScrollRequestBuilder;
         SearchResponse response;
+        String scrollId = null;
+
         while (true) {
-            searchScrollRequestBuilder = client.prepareSearchScroll(scrollId);
-            searchScrollRequestBuilder.setScroll(timeValue);
-            response = searchScrollRequestBuilder.get();
-            // 每次返回下一个批次结果 直到没有结果返回时停止 即hits数组空时
+            if (scrollId == null) {
+                SearchRequestBuilder searchRequestBuilder = client.prepareSearch();
+                searchRequestBuilder.setScroll(timeValue);
+                searchRequestBuilder.setIndices(index);
+                searchRequestBuilder.setTypes(indexType);
+                searchRequestBuilder.setQuery(queryBuilder);
+                response = searchRequestBuilder.get();
+            } else {
+                searchScrollRequestBuilder = client.prepareSearchScroll(scrollId);
+                searchScrollRequestBuilder.setScroll(timeValue);
+                response = searchScrollRequestBuilder.get();
+            }
             if (response.getHits().getHits().length == 0) {
                 break;
             } // if
-            SearchHit[] arr = response.getHits().getHits();
-            for (SearchHit hit : arr) {
-                Map<String, Object> sources = hit.getSource();
+            SearchHit[] searchHits = response.getHits().getHits();
+            for (SearchHit searchHit : searchHits) {
+                Map<String, Object> sources = searchHit.getSource();
                 Record record = new DefaultRecord(columns.length);
                 for (String c : columns) {
-                    record.add(sources.get(c));
+                    Object value = sources.get(c);
+                    if (value == null) {
+                        value = "";
+                    }
+                    record.add(value);
                 }
                 recordCollector.send(record);
-            }
+            } // for
             scrollId = response.getScrollId();
         }
     }
