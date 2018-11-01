@@ -4,6 +4,7 @@ import com.github.stuxuhai.hdata.api.JobContext;
 import com.github.stuxuhai.hdata.api.PluginConfig;
 import com.github.stuxuhai.hdata.api.Record;
 import com.github.stuxuhai.hdata.api.Writer;
+import com.github.stuxuhai.hdata.exception.HDataException;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -79,7 +80,7 @@ public class DubboWriter extends Writer {
                 rpcService.execute(record);
                 counter.incrementAndGet();
             } catch (Throwable e) {
-                throw new RuntimeException("an exception has been thrown when send data. ", e);
+                throw new HDataException(e);
             }
         }
     }
@@ -89,7 +90,7 @@ public class DubboWriter extends Writer {
         try {
             rpcService.close(counter.get(), writerCounter.decrementAndGet() == 0);
         } catch (Throwable e) {
-            throw new RuntimeException("an exception has been thrown when close. ", e);
+            throw new HDataException(e);
         }
     }
 }

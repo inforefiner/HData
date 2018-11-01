@@ -1,12 +1,14 @@
 package com.github.stuxuhai.hdata.core;
 
-import com.github.stuxuhai.hdata.api.JobContext;
-import com.github.stuxuhai.hdata.api.Metric;
-import com.github.stuxuhai.hdata.api.PluginConfig;
-import com.github.stuxuhai.hdata.api.Writer;
+import com.github.stuxuhai.hdata.api.*;
+import com.github.stuxuhai.hdata.exception.HDataException;
 import com.lmax.disruptor.WorkHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class RecordWorkHandler implements WorkHandler<RecordEvent> {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(RecordWorkHandler.class);
 
     private final Writer writer;
     private final JobContext context;
@@ -37,7 +39,12 @@ public class RecordWorkHandler implements WorkHandler<RecordEvent> {
 
     @Override
     public void onEvent(RecordEvent event) {
-        writer.execute(event.getRecord());
-        metric.getWriteCount().incrementAndGet();
+        try {
+            writer.execute(event.getRecord());
+            metric.getWriteCount().incrementAndGet();
+        } catch (Throwable e) {
+            context.setWriterError(true);
+            throw new HDataException(e);
+        }
     }
 }

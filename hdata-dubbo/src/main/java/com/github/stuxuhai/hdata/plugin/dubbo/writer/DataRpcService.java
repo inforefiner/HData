@@ -19,6 +19,12 @@ public class DataRpcService implements RpcCallable {
 
     private static final Logger logger = LogManager.getLogger(DataRpcService.class);
 
+    private static int DEFAULT_BUFFER_SIZE = 5000;
+    private static long MAX_FLUSH_PADDING_TIME = 1000 * 30;
+
+    private static int bufferSize;
+    private static long flushPaddingTime;
+
     private String tenantId;
     private String taskId;
     private String channelId;
@@ -27,11 +33,9 @@ public class DataRpcService implements RpcCallable {
 
     private volatile boolean isClosed = false;
 
+    private volatile boolean hasError = false;
+
     private volatile long lastFlushTime = 0l;
-
-    private static int DEFAULT_BUFFER_SIZE = 5000;
-
-    private static long MAX_FLUSH_PADDING_TIME = 1000 * 30;
 
     private BlockingQueue<Object[]> bufferQueue;
 
@@ -44,9 +48,12 @@ public class DataRpcService implements RpcCallable {
         try {
             dataService.prepare(tenantId, taskId, configuration);
         } catch (Exception e) {
-            logger.error("can't connect europa data server", e);
-            throw new RuntimeException("can't connect europa data server");
+            logger.error("can't connect data server", e);
+            throw new RuntimeException("can't connect data server");
         }
+
+        bufferSize = configuration.getInt("buffer.size", DEFAULT_BUFFER_SIZE);
+        flushPaddingTime = configuration.getLong("flush.padding.time", MAX_FLUSH_PADDING_TIME);
     }
 
     @Override
@@ -54,15 +61,22 @@ public class DataRpcService implements RpcCallable {
         this.tenantId = tenantId;
         this.taskId = taskId;
         this.channelId = channelId;
-        this.bufferQueue = new ArrayBlockingQueue(DEFAULT_BUFFER_SIZE, true);
+        this.bufferQueue = new ArrayBlockingQueue(bufferSize, true);
         Thread t = new Thread(new DataSender());
         t.setDaemon(true);
         t.start();
     }
 
     @Override
-    public void execute(Record record) throws Throwable {
-        bufferQueue.put(record.strings());
+    public void execute(Record record) {
+        if (hasError) {
+            throw new RuntimeException("data service has error");
+        }
+        try {
+            bufferQueue.put(record.strings());
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -80,31 +94,29 @@ public class DataRpcService implements RpcCallable {
         @Override
         public void run() {
             while (!isClosed) {
-                if (bufferQueue.remainingCapacity() == 0 || (!bufferQueue.isEmpty() && (System.currentTimeMillis() - lastFlushTime) > MAX_FLUSH_PADDING_TIME)) {
+                if (bufferQueue.remainingCapacity() == 0 || (!bufferQueue.isEmpty() && (System.currentTimeMillis() - lastFlushTime) > flushPaddingTime)) {
                     flushData();
                 }
             }
         }
     }
 
-    private void flushData() {
-        try {
-            lastFlushTime = System.currentTimeMillis();
-            long l = System.currentTimeMillis();
-            List list = new ArrayList();
-            bufferQueue.drainTo(list);
-            byte[] bytes = ByteUtil.toByteArray(list);
-            int length = bytes.length;
-            byte[] compressed = Lz4Util.compress(bytes, length);
-            int ret = dataService.execute(tenantId, taskId, channelId, compressed, length, list.size());
-            if (ret == -1) {
-                logger.error("task {} channel {} has error when flush data. the data server maybe lost.", taskId, channelId);
-            } else {
-                logger.info("task {} channel {} has flush {} records, size is {}, use time {} ms", taskId, channelId, list.size(), length, System.currentTimeMillis() - l);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
+    private int flushData() {
+        lastFlushTime = System.currentTimeMillis();
+        long l = System.currentTimeMillis();
+        List list = new ArrayList();
+        bufferQueue.drainTo(list);
+        byte[] bytes = ByteUtil.toByteArray(list);
+        int length = bytes.length;
+        byte[] compressed = Lz4Util.compress(bytes, length);
+        int ret = dataService.execute(tenantId, taskId, channelId, compressed, length, list.size());
+        if (ret == -1) {
+            logger.error("task {} channel {} has error when flush data. the data server maybe lost.", taskId, channelId);
+            hasError = true;
+        } else {
+            logger.info("task {} channel {} has flush {} records, size is {}, use time {} ms", taskId, channelId, list.size(), length, System.currentTimeMillis() - l);
         }
+        return ret;
     }
 
     public static DataService ConnectWriterServer(Configuration writerConfig) {
@@ -114,7 +126,7 @@ public class DataRpcService implements RpcCallable {
                     ApplicationConfig application = new ApplicationConfig();
                     application.setName("hdata-dubbo-data-writer");
                     RegistryConfig registry = new RegistryConfig();
-                    String protocol = writerConfig.getString("protocol");
+                    String protocol = writerConfig.getString("protocol", "zookeeper");
                     registry.setProtocol(protocol);
                     registry.setClient("curatorx");
 

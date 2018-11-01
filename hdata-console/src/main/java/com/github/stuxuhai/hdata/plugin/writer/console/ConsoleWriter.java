@@ -4,6 +4,7 @@ import com.github.stuxuhai.hdata.api.JobContext;
 import com.github.stuxuhai.hdata.api.PluginConfig;
 import com.github.stuxuhai.hdata.api.Record;
 import com.github.stuxuhai.hdata.api.Writer;
+import com.github.stuxuhai.hdata.exception.HDataException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -35,6 +36,7 @@ public class ConsoleWriter extends Writer {
         long count = counter.incrementAndGet();
         if (count % 2000 == 0) {
             LOG.info("ConsoleWriter : " + Thread.currentThread().getName() + " has write " + counter.get() + " records ...");
+            throw new HDataException();
         }
         if (isDebug) {
             StringBuilder sb = new StringBuilder();
