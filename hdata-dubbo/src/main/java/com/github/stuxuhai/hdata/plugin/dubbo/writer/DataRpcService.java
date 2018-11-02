@@ -95,7 +95,12 @@ public class DataRpcService implements RpcCallable {
         public void run() {
             while (!isClosed) {
                 if (bufferQueue.remainingCapacity() == 0 || (!bufferQueue.isEmpty() && (System.currentTimeMillis() - lastFlushTime) > flushPaddingTime)) {
-                    flushData();
+                    try {
+                        flushData();
+                    } catch (Exception e) {
+                        hasError = true;
+                        logger.error(e);
+                    }
                 }
             }
         }
