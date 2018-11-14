@@ -6,6 +6,8 @@ public class JDBCReaderProperties {
     public static final String URL = "url";
     public static final String USERNAME = "username";
     public static final String PASSWORD = "password";
+    public static final String CATALOG = "catalog";
+    public static final String SCHEMA = "schema";
     public static final String TABLE = "table";
     public static final String COLUMNS = "columns";
     public static final String EXCLUDE_COLUMNS = "exclude.columns";

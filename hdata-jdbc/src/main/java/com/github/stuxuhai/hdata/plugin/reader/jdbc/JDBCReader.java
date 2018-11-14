@@ -6,6 +6,7 @@ import com.github.stuxuhai.hdata.exception.HDataException;
 import com.github.stuxuhai.hdata.plugin.jdbc.JdbcUtils;
 import com.google.common.base.Throwables;
 import org.apache.commons.dbutils.DbUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -40,6 +41,9 @@ public class JDBCReader extends Reader {
         url = readerConfig.getString(JDBCReaderProperties.URL);
         String username = readerConfig.getString(JDBCReaderProperties.USERNAME);
         String password = readerConfig.getString(JDBCReaderProperties.PASSWORD);
+        String catalog = readerConfig.getString(JDBCReaderProperties.CATALOG);
+        String schema = readerConfig.getString(JDBCReaderProperties.SCHEMA);
+
         nullString = readerConfig.getString(JDBCReaderProperties.NULL_STRING);
         nullNonString = readerConfig.getString(JDBCReaderProperties.NULL_NON_STRING);
         fieldWrapReplaceString = readerConfig.getProperty(JDBCReaderProperties.FIELD_WRAP_REPLACE_STRING);
@@ -53,6 +57,12 @@ public class JDBCReader extends Reader {
             connection = JdbcUtils.getConnection(driver, url, username, password);
             connection.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
             connection.setReadOnly(true);
+            if (StringUtils.isNotBlank(catalog)) {
+                connection.setCatalog(catalog);
+            }
+            if (StringUtils.isNotBlank(schema)) {
+                connection.setSchema(schema);
+            }
         } catch (Exception e) {
             throw new HDataException(e);
         }

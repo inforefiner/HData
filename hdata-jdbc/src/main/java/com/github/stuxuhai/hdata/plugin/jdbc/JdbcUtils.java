@@ -299,9 +299,40 @@ public class JdbcUtils {
     public static void main(String[] args) {
 
         try {
-            Connection conn = JdbcUtils.getConnection("com.microsoft.sqlserver.jdbc.SQLServerDriver", "jdbc:sqlserver://192.168.2.244:1433;databaseName=master", "sa", "123456");
-            String str = getSplitKey(conn, conn.getCatalog(), conn.getSchema(), "UserInfo");
-            System.out.println(str);
+            Connection conn = JdbcUtils.getConnection("oracle.jdbc.OracleDriver", "jdbc:oracle:thin:@192.168.1.82:1521:oraclesid", "test2", "test2");
+            ResultSet rs = conn.getMetaData().getTables(conn.getCatalog(), "TEST1", null, null);
+            while (rs.next()) {
+                System.out.println("TABLE_NAME = " + rs.getString("TABLE_NAME"));
+            }
+            conn.setSchema("TEST1");
+            Statement stmt = conn.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
+//            boolean ret = stmt.execute("ALTER SESSION SET CURRENT_SCHEMA = TEST1");
+//            System.out.println("ret = " + ret);
+            Statement stmt1 = conn.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
+
+            try (ResultSet rs1 = stmt1.executeQuery("select * from \"test\"")) {
+                while (rs1.next()) {
+                    System.out.println(rs1.getString("LOGID"));
+                }
+            }
+
+            //            try {
+//                System.out.println(conn.getCatalog());
+//            } catch (Throwable e) {
+//                e.printStackTrace();
+//            }
+//            try {
+//                System.out.println(conn.getSchema());
+//            } catch (Throwable e) {
+//                e.printStackTrace();
+//            }
+//            ResultSet rs = conn.getMetaData().getTables(conn.getCatalog(), "TEST1", null, null);
+//            while(rs.next()){
+//                System.out.println(rs.getString("TABLE_NAME"));
+//            }
+//            System.out.println(rs.);
+//            String str = getSplitKey(conn, conn.getCatalog(), conn.getSchema(), "T_PK_TEST");
+//            System.out.println(str);
         } catch (Exception e) {
             e.printStackTrace();
         }
