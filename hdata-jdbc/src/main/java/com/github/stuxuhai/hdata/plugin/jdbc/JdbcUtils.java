@@ -300,11 +300,11 @@ public class JdbcUtils {
 
         try {
             Connection conn = JdbcUtils.getConnection("oracle.jdbc.OracleDriver", "jdbc:oracle:thin:@192.168.1.82:1521:oraclesid", "test2", "test2");
-            ResultSet rs = conn.getMetaData().getTables(conn.getCatalog(), "TEST1", null, null);
+            ResultSet rs = conn.getMetaData().getTables(conn.getCatalog(), "test1", null, null);
             while (rs.next()) {
                 System.out.println("TABLE_NAME = " + rs.getString("TABLE_NAME"));
             }
-            conn.setSchema("TEST1");
+            conn.setSchema("test1");
             Statement stmt = conn.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
 //            boolean ret = stmt.execute("ALTER SESSION SET CURRENT_SCHEMA = TEST1");
 //            System.out.println("ret = " + ret);

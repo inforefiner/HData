@@ -94,7 +94,6 @@ public class JDBCReader extends Reader {
             } else {
                 throw new HDataException("sql 分片 为空");
             }
-
             statement.close();
         } catch (SQLException e) {
             throw new HDataException(e);

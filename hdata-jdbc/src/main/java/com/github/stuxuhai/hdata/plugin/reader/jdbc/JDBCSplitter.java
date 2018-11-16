@@ -45,7 +45,7 @@ public class JDBCSplitter extends Splitter {
             long count = JdbcUtils.getCount(conn, sql.replace(CONDITIONS, "(1 = 1)"));
             if (count > 0) {
                 long step = maxFetchSize;
-                iterator.add(new JDBCIterator.JDBCUnit2(driver, sql, columns, splitColumn, table,0, count, step, parallelism));
+                iterator.add(new JDBCIterator.JDBCUnit2(driver, sql, columns, splitColumn, table, 0, count, step, parallelism));
             }
         }
         for (int i = 0; i < parallelism; i++) {
@@ -97,6 +97,8 @@ public class JDBCSplitter extends Splitter {
 
         String username = readerConfig.getString(JDBCReaderProperties.USERNAME);
         String password = readerConfig.getString(JDBCReaderProperties.PASSWORD);
+        String catalog = readerConfig.getString(JDBCReaderProperties.CATALOG);
+        String schema = readerConfig.getString(JDBCReaderProperties.SCHEMA);
         int parallelism = readerConfig.getParallelism();
         int maxFetchSize = readerConfig.getInt(JDBCReaderProperties.MAX_SIZE_PER_FETCH, 10000);
         String cursorColumn = readerConfig.getString(JDBCReaderProperties.CURSOR_COLUMN);
@@ -126,20 +128,22 @@ public class JDBCSplitter extends Splitter {
 
         try {
             conn = JdbcUtils.getConnection(driver, url, username, password);
-            String catalog = null;
             try {
-                catalog = conn.getCatalog();
+                if (StringUtils.isBlank(catalog)) {
+                    catalog = conn.getCatalog();
+                }
             } catch (Throwable e) {
-//                e.printStackTrace();
             }
-            String schema = null;
             try {
-                schema = conn.getSchema();
+                if (StringUtils.isBlank(schema)) {
+                    schema = conn.getSchema();
+                }
             } catch (Throwable e) {
-//                e.printStackTrace();
             }
-            String splitKey = JdbcUtils.getSplitKey(conn, catalog, schema, table);
+            conn.setCatalog(catalog);
+            conn.setSchema(schema);
 
+            String splitKey = JdbcUtils.getSplitKey(conn, catalog, schema, table);
             if (JdbcUtils.isOracle(driver)) {
                 sql.append(", ROWNUM RN");
             }
