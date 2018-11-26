@@ -10,6 +10,8 @@ import com.merce.woven.data.rpc.DataService;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -138,7 +140,15 @@ public class DataRpcService implements RpcCallable {
                     registry.setAddress(writerConfig.getString("address"));
                     registry.setUsername(writerConfig.getString("username"));
                     registry.setPassword(writerConfig.getString("password"));
+                    try {
+                        File file = File.createTempFile("dubbo-" + System.currentTimeMillis(), ".cache");
+                        file.deleteOnExit();
+                        registry.setFile(file.getPath());
 
+                        logger.info("cached registry file in " + file.getPath());
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                     ReferenceConfig<DataService> reference = new ReferenceConfig<DataService>();
                     reference.setApplication(application);
                     reference.setRegistry(registry); // 多个注册中心可以用setRegistries()

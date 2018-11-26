@@ -160,7 +160,6 @@ public class HData {
                     LOGGER.info("Read error.");
                     closeWriters(writers);
                     LOGGER.info("Job run failed!");
-                    System.exit(1);
                 }
 
                 Integer result = future.get();
@@ -172,7 +171,6 @@ public class HData {
                     LOGGER.info("Read error.");
                     closeWriters(writers);
                     LOGGER.info("Job run failed!");
-                    System.exit(result);
                 }
             } catch (Exception e) {
                 LOGGER.error(Throwables.getStackTraceAsString(e));
@@ -181,11 +179,8 @@ public class HData {
         }
 
         metric.setWriterEndTime(System.currentTimeMillis());
-        if (!closeWriters(writers)) {
-            exitCode = 1;
-        }
-
         context.setWriterFinished(true);
+        closeWriters(writers);
 
         double readSeconds = (metric.getReaderEndTime() - metric.getReaderStartTime()) / 1000d;
         double writeSeconds = (metric.getWriterEndTime() - metric.getWriterStartTime()) / 1000d;
@@ -193,14 +188,10 @@ public class HData {
         String writeSpeed = decimalFormat.format(metric.getWriteCount().get() / writeSeconds);
         LOGGER.info("Read spent time: {}s, Write spent time: {}s", decimalFormat.format(readSeconds), decimalFormat.format(writeSeconds));
         LOGGER.info("Read records: {}/s, Write records: {}/s", readSpeed, writeSpeed);
-
-        // PluginUtils.closeURLClassLoader();
-
-        System.exit(exitCode);
     }
 
     private DefaultStorage createStorage(int bufferSize, String WaitStrategyName, int producerCount, RecordWorkHandler[] handlers,
-            JobContext context) {
+                                         JobContext context) {
         WaitStrategy waitStrategy = WaitStrategyFactory.build(WaitStrategyName);
         ProducerType producerType;
         if (producerCount == 1) {
@@ -254,7 +245,6 @@ public class HData {
                     for (Writer writer : writers) {
                         writer.close();
                     }
-
                     return true;
                 } catch (Exception e) {
                     LOGGER.error(Throwables.getStackTraceAsString(e));

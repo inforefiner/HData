@@ -106,7 +106,7 @@ public class FTPReader extends Reader {
                         LOG.error("can't write to hdfs : " + fullPath, e);
                         e.printStackTrace();
                     }
-                    Record record = new DefaultRecord(3);
+                    Record record = new DefaultRecord(4);
                     record.add(filePath);
                     record.add(fullPath);
                     record.add(file.getSize());
@@ -122,7 +122,7 @@ public class FTPReader extends Reader {
                     FileSender sender = new FileSender(httpUrl, tmpFile.getPath(), fullPath);
                     if (!sender.exists(file.getSize(), file.getModificationTime())) {
                         sender.send();
-                        Record record = new DefaultRecord(3);
+                        Record record = new DefaultRecord(4);
                         record.add(filePath);
                         record.add(fullPath);
                         record.add(file.getSize());

@@ -31,18 +31,18 @@ mkdir -p $HDATA_BUILD_HDATA_DIR/plugins
 cp $HDATA_HOME/bin/hdata* $HDATA_BUILD_HDATA_DIR/bin/
 cp -r $HDATA_HOME/conf $HDATA_BUILD_HDATA_DIR/
 
-mvn clean package -Pcopy-dependency -DskipTests
+mvn clean package -Pcopy-dependency -DskipTests -DbuildTime=`date +%y%m%d%H%M%S`
 
 cp $HDATA_HOME/hdata-core/target/hdata-core-*.jar $HDATA_BUILD_HDATA_DIR/lib
 cp $HDATA_HOME/hdata-core/target/dependency/*.jar $HDATA_BUILD_HDATA_DIR/lib
 cp $HDATA_HOME/hdata-api/target/dependency/*.jar $HDATA_BUILD_HDATA_DIR/lib
 
-mkdir -p $HDATA_BUILD_HDATA_DIR/cloud
-cp $HDATA_HOME/hdata-cloud/target/*.jar $HDATA_BUILD_HDATA_DIR/cloud
-cp $HDATA_HOME/hdata-cloud/target/dependency/*.jar $HDATA_BUILD_HDATA_DIR/cloud
+#mkdir -p $HDATA_BUILD_HDATA_DIR/cloud
+#cp $HDATA_HOME/hdata-cloud/target/*.jar $HDATA_BUILD_HDATA_DIR/cloud
+#cp $HDATA_HOME/hdata-cloud/target/dependency/*.jar $HDATA_BUILD_HDATA_DIR/cloud
 
 for f in $HDATA_HOME/hdata-*; do
-    if [ $f != $HDATA_HOME/hdata-api -a $f != $HDATA_HOME/hdata-core -a $f != $HDATA_HOME/hdata-cloud ]; then
+    if [ $f != $HDATA_HOME/hdata-api -a $f != $HDATA_HOME/hdata-core ]; then
        pluginDir=$HDATA_BUILD_HDATA_DIR/plugins/${f##*-}
        mkdir -p $pluginDir
        cp $f/target/hdata-*.jar $pluginDir
@@ -55,7 +55,7 @@ done
 
 cd $HDATA_BUILD_DIR
 
-EXCLUDE_LIST="csv excel hbase hdfs hive kafka"
+EXCLUDE_LIST="csv excel hbase hdfs hive kafka cloud"
 for i in $EXCLUDE_LIST
 do
   echo $i

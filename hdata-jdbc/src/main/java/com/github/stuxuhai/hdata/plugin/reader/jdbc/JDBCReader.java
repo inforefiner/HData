@@ -1,10 +1,8 @@
 package com.github.stuxuhai.hdata.plugin.reader.jdbc;
 
 import com.github.stuxuhai.hdata.api.*;
-import com.github.stuxuhai.hdata.common.HDataConfigConstants;
 import com.github.stuxuhai.hdata.exception.HDataException;
 import com.github.stuxuhai.hdata.plugin.jdbc.JdbcUtils;
-import com.google.common.base.Throwables;
 import org.apache.commons.dbutils.DbUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.logging.log4j.LogManager;
@@ -17,10 +15,12 @@ import java.util.List;
 
 public class JDBCReader extends Reader {
 
+    private final Logger logger = LogManager.getLogger(JDBCReader.class);
+
     private Connection connection;
     private JDBCIterator sqlPiece;
     private List<String> sqlList;
-    private String url;
+
     private Fields fields = new Fields();
     private int columnCount;
     private int sequence;
@@ -29,20 +29,23 @@ public class JDBCReader extends Reader {
     private String nullNonString = null;
     private String fieldWrapReplaceString = null;
     private DecimalFormat decimalFormat = null;
-    private long sqlMetricTime = -1;
 
-    private static final Logger LOGGER = LogManager.getLogger("sql-metric");
+    private String url;
+    private String driver;
+    private String username;
+    private String password;
+    private String catalog;
+    private String schema;
 
     @SuppressWarnings("unchecked")
     @Override
     public void prepare(JobContext context, PluginConfig readerConfig) {
-        sqlMetricTime = context.getEngineConfig().getLong(HDataConfigConstants.JDBC_READER_SQL_METRIC_TIME_MS, -1);
-        String driver = readerConfig.getString(JDBCReaderProperties.DRIVER);
+        driver = readerConfig.getString(JDBCReaderProperties.DRIVER);
         url = readerConfig.getString(JDBCReaderProperties.URL);
-        String username = readerConfig.getString(JDBCReaderProperties.USERNAME);
-        String password = readerConfig.getString(JDBCReaderProperties.PASSWORD);
-        String catalog = readerConfig.getString(JDBCReaderProperties.CATALOG);
-        String schema = readerConfig.getString(JDBCReaderProperties.SCHEMA);
+        username = readerConfig.getString(JDBCReaderProperties.USERNAME);
+        password = readerConfig.getString(JDBCReaderProperties.PASSWORD);
+        catalog = readerConfig.getString(JDBCReaderProperties.CATALOG);
+        schema = readerConfig.getString(JDBCReaderProperties.SCHEMA);
 
         nullString = readerConfig.getString(JDBCReaderProperties.NULL_STRING);
         nullNonString = readerConfig.getString(JDBCReaderProperties.NULL_NON_STRING);
@@ -53,20 +56,7 @@ public class JDBCReader extends Reader {
             decimalFormat = new DecimalFormat(numberFormat);
         }
 
-        try {
-            connection = JdbcUtils.getConnection(driver, url, username, password);
-            connection.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
-            connection.setReadOnly(true);
-            if (StringUtils.isNotBlank(catalog)) {
-                connection.setCatalog(catalog);
-            }
-            if (StringUtils.isNotBlank(schema)) {
-                connection.setSchema(schema);
-            }
-        } catch (Exception e) {
-            throw new HDataException(e);
-        }
-
+        connection = getConnection();
         sqlPiece = (JDBCIterator) readerConfig.get(JDBCReaderProperties.SQL_ITERATOR);
         sqlList = (List<String>) readerConfig.get(JDBCReaderProperties.SQL);
         if (sqlPiece != null) {
@@ -75,10 +65,45 @@ public class JDBCReader extends Reader {
 
     }
 
+    private Connection getConnection() throws HDataException {
+        try {
+            Connection connection = JdbcUtils.getConnection(driver, url, username, password);
+            connection.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
+            connection.setReadOnly(true);
+            if (StringUtils.isNotBlank(catalog)) {
+                connection.setCatalog(catalog);
+            }
+            if (StringUtils.isNotBlank(schema)) {
+                connection.setSchema(schema);
+            }
+            return connection;
+        } catch (Throwable e) {
+            logger.error("can't get connection with " + url, e);
+        }
+        throw new HDataException("can't get connection with " + url);
+    }
+
+    private Statement getStatement() {
+        try {
+            if (connection == null || connection.isClosed()) {
+                connection = getConnection();
+            }
+            Statement statement = connection.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
+            statement.setQueryTimeout(30);
+            statement.setFetchSize(100);
+//            statement.setPoolable(true);
+            return statement;
+        } catch (Throwable e) {
+            logger.error("can't create statement", e);
+        }
+        throw new HDataException("can't create statement");
+    }
+
+
     @Override
     public void execute(RecordCollector recordCollector) {
         try {
-            Statement statement = connection.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
+            Statement statement = getStatement();
             if (sqlPiece != null) {
                 while (true) {
                     String sql = sqlPiece.getNextSQL(sequence);
@@ -95,21 +120,25 @@ public class JDBCReader extends Reader {
                 throw new HDataException("sql 分片 为空");
             }
             statement.close();
-        } catch (SQLException e) {
+        } catch (Throwable e) {
+            logger.error(e);
             throw new HDataException(e);
         }
     }
 
-    private void executeSingle(Statement statement, String sql, RecordCollector recordCollector) throws SQLException {
+    private void executeSingle(Statement statement, String sql, RecordCollector recordCollector) throws Throwable {
         int rows = 0;
         long startTime = System.currentTimeMillis();
-        long endTime = startTime;
-
+        ResultSet rs = null;
         try {
-            LOGGER.info("execute select sql =  {} ", sql);
-            ResultSet rs = statement.executeQuery(sql);
-            endTime = System.currentTimeMillis();
-
+            logger.info("execute query sql =  {} ", sql);
+            rs = statement.executeQuery(sql);
+            logger.info("execute query sql = {} done, fetch size = {}", sql, rs.getFetchSize());
+        } catch (Throwable e) {
+            logger.error("execute query error", e);
+            throw e;
+        }
+        try {
             if (columnCount == 0 || columnTypes == null) {
                 ResultSetMetaData metaData = rs.getMetaData();
                 columnCount = metaData.getColumnCount();
@@ -119,7 +148,6 @@ public class JDBCReader extends Reader {
                     columnTypes[i - 1] = metaData.getColumnType(i);
                 }
             }
-
             while (rs.next()) {
                 Record r = new DefaultRecord(columnCount);
                 for (int i = 1; i <= columnCount; i++) {
@@ -128,14 +156,12 @@ public class JDBCReader extends Reader {
                         o = rs.getObject(i);
                     } catch (SQLException e) {
                         o = "";
-//                        LOGGER.error("ResultSet getObject error, case: {}", e.getMessage());
                     }
                     if (o != null && JdbcUtils.isClobType(columnTypes[i - 1])) {
                         Clob clob = (Clob) o;
                         try {
                             o = clob.getSubString(1, (int) clob.length());
                         } catch (SQLException e) {
-//                            e.printStackTrace();
                             o = "";
                         }
                     }
@@ -144,7 +170,6 @@ public class JDBCReader extends Reader {
                         try {
                             o = new String(blob.getBytes(1, (int) blob.length()), "UTF8");
                         } catch (UnsupportedEncodingException e) {
-//                            e.printStackTrace();
                             o = "";
                         }
                     }
@@ -171,14 +196,17 @@ public class JDBCReader extends Reader {
                 recordCollector.send(r);
                 rows++;
             }
-            rs.close();
-        } catch (SQLException e) {
-            Throwables.propagate(e);
-        }
-
-        long spendTime = endTime - startTime;
-        if (sqlMetricTime > 0 && spendTime > sqlMetricTime) {
-            LOGGER.info("time: {} ms, rows: {}, sql: {}", spendTime, rows, sql);
+            logger.info("execute select sql =  {} , rows = {}, use time = {}", sql, rows, System.currentTimeMillis() - startTime);
+        } catch (Throwable e) {
+            throw e;
+        } finally {
+            try {
+                if (rs != null) {
+                    rs.close();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
         }
     }
 
