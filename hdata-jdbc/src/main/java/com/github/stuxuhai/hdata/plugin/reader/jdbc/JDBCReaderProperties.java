@@ -18,6 +18,8 @@ public class JDBCReaderProperties {
     public static final String SPLIT_BY = "split.by";
     public static final String ORDER_BY = "order.by";
     public static final String MAX_SIZE_PER_FETCH = "max.size.per.fetch";
+    public static final String MAX_SIZE_PER_SQL = "max.size.per.sql";
+    public static final String QUERY_TIMEOUT = "query.timeout";
     public static final String NULL_STRING = "null.string";
     public static final String NULL_NON_STRING = "null.non.string";
     public static final String FIELD_WRAP_REPLACE_STRING = "field.wrap.replace.string";

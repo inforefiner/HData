@@ -5,6 +5,7 @@ import com.github.stuxuhai.hdata.api.PluginConfig;
 import com.github.stuxuhai.hdata.api.Splitter;
 import com.github.stuxuhai.hdata.exception.HDataException;
 import com.github.stuxuhai.hdata.plugin.jdbc.JdbcUtils;
+import com.github.stuxuhai.hdata.plugin.jdbc.ParamUtils;
 import com.github.stuxuhai.hdata.util.NumberUtils;
 import com.google.common.base.Preconditions;
 import org.apache.commons.dbutils.DbUtils;
@@ -39,7 +40,7 @@ public class JDBCSplitter extends Splitter {
         String table = readerConfig.getString(JDBCReaderProperties.TABLE);
         String columns = readerConfig.getString(JDBCReaderProperties.COLUMNS);
         int parallelism = readerConfig.getParallelism();
-        long maxFetchSize = readerConfig.getLong(JDBCReaderProperties.MAX_SIZE_PER_FETCH, 10000);
+        long maxFetchSize = ParamUtils.getLong(JDBCReaderProperties.MAX_SIZE_PER_SQL, 3000);
         JDBCIterator iterator = new JDBCIterator();
         for (String sql : sqlList) {
             long count = JdbcUtils.getCount(conn, sql.replace(CONDITIONS, "(1 = 1)"));
@@ -100,7 +101,7 @@ public class JDBCSplitter extends Splitter {
         String catalog = readerConfig.getString(JDBCReaderProperties.CATALOG);
         String schema = readerConfig.getString(JDBCReaderProperties.SCHEMA);
         int parallelism = readerConfig.getParallelism();
-        int maxFetchSize = readerConfig.getInt(JDBCReaderProperties.MAX_SIZE_PER_FETCH, 10000);
+        long maxFetchSize = ParamUtils.getLong(JDBCReaderProperties.MAX_SIZE_PER_SQL, 3000);
         String cursorColumn = readerConfig.getString(JDBCReaderProperties.CURSOR_COLUMN);
         String cursorType = readerConfig.getString(JDBCReaderProperties.CURSOR_TYPE);
         String cursorValue = readerConfig.getString(JDBCReaderProperties.CURSOR_VALUE);
@@ -144,9 +145,9 @@ public class JDBCSplitter extends Splitter {
             conn.setSchema(schema);
 
             String splitKey = JdbcUtils.getSplitKey(conn, catalog, schema, table);
-            if (JdbcUtils.isOracle(driver)) {
-                sql.append(", ROWNUM RN");
-            }
+//            if (JdbcUtils.isOracle(driver)) {
+//                sql.append(", ROWNUM RN");
+//            }
             if (JdbcUtils.isDB2(driver)) {
                 sql.append(", ROW_NUMBER() OVER() AS RN");
             }

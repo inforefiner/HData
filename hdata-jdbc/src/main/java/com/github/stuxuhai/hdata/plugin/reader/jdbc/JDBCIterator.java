@@ -165,7 +165,8 @@ public class JDBCIterator {
             String pagingSql = "";
 
             if (JdbcUtils.isOracle(driver)) {
-                pagingSql = "SELECT " + selectColumn + " FROM (" + currentSql.replace(JDBCSplitter.CONDITIONS, "ROWNUM <= " + tempEnd) + ") WHERE RN > " + tempStart;
+//                pagingSql = "SELECT " + selectColumn + " FROM (" + currentSql.replace(JDBCSplitter.CONDITIONS, "ROWNUM <= " + tempEnd) + ") WHERE RN > " + tempStart;
+                pagingSql = "SELECT " + selectColumn + " FROM ( SELECT ROWNUM AS RN, T.* FROM (" + currentSql.replace(JDBCSplitter.CONDITIONS, "(1 = 1)") + ") T WHERE ROWNUM <= " + tempEnd + ") T2 WHERE T2.RN > " + tempStart;
             } else if (JdbcUtils.isDB2(driver)) {
                 pagingSql = "SELECT " + selectColumn + " FROM (" + currentSql.replace(JDBCSplitter.CONDITIONS, "(1 = 1)") + ") WHERE RN > " + tempStart + " and RN <= " + tempEnd;
             } else if (JdbcUtils.isPG(driver)) {

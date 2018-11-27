@@ -3,6 +3,7 @@ package com.github.stuxuhai.hdata.plugin.reader.jdbc;
 import com.github.stuxuhai.hdata.api.*;
 import com.github.stuxuhai.hdata.exception.HDataException;
 import com.github.stuxuhai.hdata.plugin.jdbc.JdbcUtils;
+import com.github.stuxuhai.hdata.plugin.jdbc.ParamUtils;
 import org.apache.commons.dbutils.DbUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.logging.log4j.LogManager;
@@ -89,9 +90,11 @@ public class JDBCReader extends Reader {
                 connection = getConnection();
             }
             Statement statement = connection.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
-            statement.setQueryTimeout(30);
-            statement.setFetchSize(100);
-//            statement.setPoolable(true);
+            int queryTimeout = ParamUtils.getInt(JDBCReaderProperties.QUERY_TIMEOUT, 30);
+            statement.setQueryTimeout(queryTimeout);
+            int fetchSize = ParamUtils.getInt(JDBCReaderProperties.MAX_SIZE_PER_FETCH, 100);
+            statement.setFetchSize(fetchSize);
+            logger.info("create statement success, query timeout = {}, fetch size = {}", queryTimeout, fetchSize);
             return statement;
         } catch (Throwable e) {
             logger.error("can't create statement", e);
