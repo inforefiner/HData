@@ -188,6 +188,8 @@ public class HData {
         String writeSpeed = decimalFormat.format(metric.getWriteCount().get() / writeSeconds);
         LOGGER.info("Read spent time: {}s, Write spent time: {}s", decimalFormat.format(readSeconds), decimalFormat.format(writeSeconds));
         LOGGER.info("Read records: {}/s, Write records: {}/s", readSpeed, writeSpeed);
+
+        LOGGER.info("TASK ALL DONE");
     }
 
     private DefaultStorage createStorage(int bufferSize, String WaitStrategyName, int producerCount, RecordWorkHandler[] handlers,

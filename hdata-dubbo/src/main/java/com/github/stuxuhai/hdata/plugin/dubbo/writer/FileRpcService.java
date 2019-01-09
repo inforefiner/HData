@@ -1,6 +1,7 @@
 package com.github.stuxuhai.hdata.plugin.dubbo.writer;
 
 import com.alibaba.dubbo.config.ApplicationConfig;
+import com.alibaba.dubbo.config.ConsumerConfig;
 import com.alibaba.dubbo.config.ReferenceConfig;
 import com.alibaba.dubbo.config.RegistryConfig;
 import com.github.stuxuhai.hdata.api.Configuration;
@@ -79,6 +80,10 @@ public class FileRpcService implements RpcCallable {
                     reference.setRegistry(registry); // 多个注册中心可以用setRegistries()
                     reference.setInterface(FileService.class);
                     reference.setTimeout(60 * 1000);
+
+                    ConsumerConfig consumerConfig = new ConsumerConfig();
+                    consumerConfig.setSticky(true);
+                    reference.setConsumer(consumerConfig);
 
                     try {
                         fileService = reference.get();
