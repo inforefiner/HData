@@ -36,7 +36,6 @@ public class ConsoleWriter extends Writer {
         long count = counter.incrementAndGet();
         if (count % 2000 == 0) {
             LOG.info("ConsoleWriter : " + Thread.currentThread().getName() + " has write " + counter.get() + " records ...");
-            throw new HDataException();
         }
         if (isDebug) {
             StringBuilder sb = new StringBuilder();

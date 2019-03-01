@@ -88,6 +88,7 @@
 		<module>hdata-ftp</module>
 		<module>hdata-es5.6</module>
 		<module>hdata-mongodb</module>
+		<module>hdata-kafka</module>
 		<!--<module>hdata-cloud</module>-->
         <!--
 

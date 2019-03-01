@@ -3,9 +3,7 @@ package com.github.stuxuhai.hdata.plugin.reader.ftp;
 import com.github.stuxuhai.hdata.api.*;
 import com.github.stuxuhai.hdata.api.Reader;
 import com.github.stuxuhai.hdata.exception.HDataException;
-import com.github.stuxuhai.hdata.ftp.FTPUtils;
-import com.github.stuxuhai.hdata.ftp.FtpFile;
-import com.github.stuxuhai.hdata.ftp.HdfsUtil;
+import com.github.stuxuhai.hdata.ftp.*;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.net.ftp.FTPClient;
@@ -38,6 +36,7 @@ public class FTPReader extends Reader {
     private String readTo;
     private String hdfsPath;
     private boolean hdfsOverWrite;
+    private boolean secure;
     private String httpUrl;
 
     @SuppressWarnings("unchecked")
@@ -61,6 +60,8 @@ public class FTPReader extends Reader {
         hdfsOverWrite = readerConfig.getBoolean(FTPReaderProperties.HDFS_OVERWRITE, true);
         httpUrl = readerConfig.getString(FTPReaderProperties.HTTP_URL, "");
 
+        secure = readerConfig.getBoolean(FTPReaderProperties.SECURE, false);
+
         if (readerConfig.containsKey(FTPReaderProperties.SCHEMA)) {
             fields = new Fields();
             String[] tokens = readerConfig.getString(FTPReaderProperties.SCHEMA).split("\\s*,\\s*");
@@ -72,9 +73,14 @@ public class FTPReader extends Reader {
 
     @Override
     public void execute(RecordCollector recordCollector) {
-        FTPClient ftpClient = null;
+        FtpOperator operator = null;
+        if (secure) {
+            operator = new FtpsClient();
+        } else {
+            operator = new FtpClient();
+        }
         try {
-            ftpClient = FTPUtils.getFtpClient(host, port, username, password);
+            operator.connect(host, port, username, password);
             for (FtpFile file : files) {
                 String filePath = file.getPath();
                 String _filePath = new String(filePath.getBytes("UTF-8"), "iso-8859-1");
@@ -88,7 +94,7 @@ public class FTPReader extends Reader {
                             HdfsUtil.getInstance().delete(fullPath);
                         }
                     }
-                    InputStream is = ftpClient.retrieveFileStream(_filePath);
+                    InputStream is = operator.getInputStream(filePath);
                     if (is == null) {
                         LOG.error("file " + filePath + " can't get by ftp client.");
                         continue;
@@ -113,7 +119,7 @@ public class FTPReader extends Reader {
                     record.add(file.getModificationTime());
                     recordCollector.send(record);
                 } else if ("http".equalsIgnoreCase(readTo)) {
-                    InputStream is = ftpClient.retrieveFileStream(_filePath);
+                    InputStream is = operator.getInputStream(_filePath);
                     File tmpFile = File.createTempFile("tmp_", "");
                     tmpFile.deleteOnExit();
                     FileOutputStream fos = new FileOutputStream(tmpFile);
@@ -130,7 +136,7 @@ public class FTPReader extends Reader {
                         recordCollector.send(record);
                     }
                 } else {
-                    InputStream is = ftpClient.retrieveFileStream(_filePath);
+                    InputStream is = operator.getInputStream(_filePath);
                     BufferedReader br = null;
                     if (filePath.endsWith(".gz")) {
                         GZIPInputStream gzin = new GZIPInputStream(is);
@@ -156,12 +162,11 @@ public class FTPReader extends Reader {
                     br.close();
                     is.close();
                 }
-                ftpClient.completePendingCommand();
             }
-        } catch (Exception e) {
+        } catch (Throwable e) {
             throw new HDataException(e);
         } finally {
-            FTPUtils.closeFtpClient(ftpClient);
+            operator.close();
         }
     }
 
