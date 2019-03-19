@@ -1,6 +1,7 @@
 package com.github.stuxuhai.hdata.plugin.reader.ftp;
 
 public class FTPReaderProperties {
+    public static final String SKIP_HEADER = "skip.header";
     public static final String SECURE = "secure";
     public static final String HOST = "host";
     public static final String PORT = "port";

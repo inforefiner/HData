@@ -63,6 +63,10 @@ public class FtpsClient implements FtpOperator {
     }
 
     @Override
+    public void commit() {
+    }
+
+    @Override
     public void close() {
         if (channel != null) {
             if (channel.isConnected()) {

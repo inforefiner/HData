@@ -37,6 +37,7 @@ public class FTPReader extends Reader {
     private String hdfsPath;
     private boolean hdfsOverWrite;
     private boolean secure;
+    private boolean skipHeader;
     private String httpUrl;
 
     @SuppressWarnings("unchecked")
@@ -61,6 +62,8 @@ public class FTPReader extends Reader {
         httpUrl = readerConfig.getString(FTPReaderProperties.HTTP_URL, "");
 
         secure = readerConfig.getBoolean(FTPReaderProperties.SECURE, false);
+
+        skipHeader = readerConfig.getBoolean(FTPReaderProperties.SKIP_HEADER, false);
 
         if (readerConfig.containsKey(FTPReaderProperties.SCHEMA)) {
             fields = new Fields();
@@ -111,6 +114,8 @@ public class FTPReader extends Reader {
                     } catch (Throwable e) {
                         LOG.error("can't write to hdfs : " + fullPath, e);
                         e.printStackTrace();
+                    } finally {
+                        operator.commit();
                     }
                     Record record = new DefaultRecord(4);
                     record.add(filePath);
@@ -148,15 +153,16 @@ public class FTPReader extends Reader {
                     long currentRow = 0;
                     while ((line = br.readLine()) != null) {
                         currentRow++;
-                        if (currentRow >= startRow) {
-                            String[] tokens = StringUtils.splitPreserveAllTokens(line, fieldsSeparator);
-                            if (tokens.length >= fieldsCount) {
-                                Record record = new DefaultRecord(tokens.length);
-                                for (String field : tokens) {
-                                    record.add(field);
-                                }
-                                recordCollector.send(record);
+                        if (skipHeader && currentRow == 1) {
+                            continue;
+                        }
+                        String[] tokens = StringUtils.splitPreserveAllTokens(line, fieldsSeparator);
+                        if (tokens.length >= fieldsCount) {
+                            Record record = new DefaultRecord(tokens.length);
+                            for (String field : tokens) {
+                                record.add(field);
                             }
+                            recordCollector.send(record);
                         }
                     }
                     br.close();
