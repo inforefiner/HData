@@ -44,13 +44,18 @@ public class FtpsClient implements FtpOperator {
                 ChannelSftp.LsEntry entry = (ChannelSftp.LsEntry) item;
                 SftpATTRS attrs = entry.getAttrs();
                 String name = entry.getFilename();
-                if (attrs.isDir() && recursive && !".".equals(name) && !"..".equals(name)) {
-                    list(files, path + "/" + name, filenameRegexp, recursive);
-                } else {
-                    if (Pattern.matches(filenameRegexp, name)) {
-                        files.add(new FtpFile(path + "/" + name, attrs.getSize(), attrs.getMTime()));
+                if (!".".equals(name) && !"..".equals(name)) {
+                    if (attrs.isDir()) {
+                        if (recursive) {
+                            list(files, path + "/" + name, filenameRegexp, recursive);
+                        }
+                    } else {
+                        if (Pattern.matches(filenameRegexp, name)) {
+                            files.add(new FtpFile(path + "/" + name, attrs.getSize(), attrs.getMTime()));
+                        }
                     }
                 }
+
             }
         } catch (SftpException e) {
             e.printStackTrace();
@@ -63,7 +68,8 @@ public class FtpsClient implements FtpOperator {
     }
 
     @Override
-    public void commit() {
+    public void commit() throws Throwable {
+
     }
 
     @Override

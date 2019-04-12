@@ -38,6 +38,9 @@ public class JDBCReader extends Reader {
     private String catalog;
     private String schema;
 
+    private int queryTimeout;
+    private int fetchSize;
+
     @SuppressWarnings("unchecked")
     @Override
     public void prepare(JobContext context, PluginConfig readerConfig) {
@@ -64,6 +67,8 @@ public class JDBCReader extends Reader {
             sequence = (Integer) readerConfig.get(JDBCReaderProperties.SQL_SEQ);
         }
 
+        queryTimeout = readerConfig.getInt(JDBCReaderProperties.QUERY_TIMEOUT, 0);
+        fetchSize = readerConfig.getInt(JDBCReaderProperties.MAX_SIZE_PER_FETCH, 0);
     }
 
     private Connection getConnection() throws HDataException {
@@ -90,9 +95,7 @@ public class JDBCReader extends Reader {
                 connection = getConnection();
             }
             Statement statement = connection.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
-            int queryTimeout = ParamUtils.getInt(JDBCReaderProperties.QUERY_TIMEOUT, 30);
             statement.setQueryTimeout(queryTimeout);
-            int fetchSize = ParamUtils.getInt(JDBCReaderProperties.MAX_SIZE_PER_FETCH, 100);
             statement.setFetchSize(fetchSize);
             logger.info("create statement success, query timeout = {}, fetch size = {}", queryTimeout, fetchSize);
             return statement;
@@ -105,8 +108,9 @@ public class JDBCReader extends Reader {
 
     @Override
     public void execute(RecordCollector recordCollector) {
+        Statement statement = null;
         try {
-            Statement statement = getStatement();
+            statement = getStatement();
             if (sqlPiece != null) {
                 while (true) {
                     String sql = sqlPiece.getNextSQL(sequence);
@@ -122,10 +126,17 @@ public class JDBCReader extends Reader {
             } else {
                 throw new HDataException("sql 分片 为空");
             }
-            statement.close();
         } catch (Throwable e) {
             logger.error(e);
             throw new HDataException(e);
+        } finally {
+            if (statement != null) {
+                try {
+                    statement.close();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            }
         }
     }
 

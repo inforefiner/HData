@@ -58,12 +58,8 @@ public class FtpClient implements FtpOperator {
     }
 
     @Override
-    public void commit() {
-        try {
-            client.completePendingCommand();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    public void commit() throws Throwable {
+        client.completePendingCommand();
     }
 
     @Override

@@ -121,8 +121,8 @@ public class HData {
         metric.setReaderStartTime(System.currentTimeMillis());
         metric.setWriterStartTime(System.currentTimeMillis());
         while (!es.isTerminated()) {
-            if (context.isWriterError()) {
-                LOGGER.info("Write error.");
+            if (context.isReaderError() || context.isWriterError()) {
+                LOGGER.info("Reader or Writer has error.");
                 LOGGER.info("Closing reader and writer.");
                 // storage.close();
                 closeReaders(readers);
@@ -130,7 +130,6 @@ public class HData {
                 LOGGER.info("Job run failed!");
                 System.exit(JobStatus.FAILED.getStatus());
             }
-
             Utils.sleep(sleepMillis);
             LOGGER.info("Read: {}\tWrite: {}", metric.getReadCount().get(), metric.getWriteCount().get());
         }
@@ -146,7 +145,6 @@ public class HData {
                 System.exit(JobStatus.FAILED.getStatus());
             }
             Utils.sleep(sleepMillis);
-
             LOGGER.info("Read Finished(total: {}), Write: {}", metric.getReadCount().get(), metric.getWriteCount().get());
         }
 

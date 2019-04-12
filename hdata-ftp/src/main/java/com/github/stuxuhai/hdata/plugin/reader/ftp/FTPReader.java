@@ -97,9 +97,14 @@ public class FTPReader extends Reader {
                             HdfsUtil.getInstance().delete(fullPath);
                         }
                     }
-                    InputStream is = operator.getInputStream(filePath);
+                    InputStream is = null;
+                    try {
+                        is = operator.getInputStream(filePath);
+                    } catch (Throwable e) {
+                        LOG.error("file " + filePath + " can't get by ftp client.", e);
+                        continue;
+                    }
                     if (is == null) {
-                        LOG.error("file " + filePath + " can't get by ftp client.");
                         continue;
                     }
                     try {
@@ -113,9 +118,13 @@ public class FTPReader extends Reader {
                         HdfsUtil.getInstance().rename(pendingPath, fullPath);
                     } catch (Throwable e) {
                         LOG.error("can't write to hdfs : " + fullPath, e);
-                        e.printStackTrace();
+                        continue;
                     } finally {
-                        operator.commit();
+                        try {
+                            operator.commit();
+                        } catch (Throwable e) {
+                            LOG.error("file commit error : ", e);
+                        }
                     }
                     Record record = new DefaultRecord(4);
                     record.add(filePath);

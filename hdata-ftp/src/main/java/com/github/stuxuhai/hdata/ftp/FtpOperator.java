@@ -11,7 +11,7 @@ public interface FtpOperator {
 
     void close();
 
-    void commit();
+    void commit() throws Throwable;
 
     InputStream getInputStream(String path) throws Throwable;
 }

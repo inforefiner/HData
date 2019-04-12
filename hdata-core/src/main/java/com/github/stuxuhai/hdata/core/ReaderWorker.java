@@ -5,8 +5,12 @@ import java.util.concurrent.Callable;
 import com.github.stuxuhai.hdata.api.JobContext;
 import com.github.stuxuhai.hdata.api.PluginConfig;
 import com.github.stuxuhai.hdata.api.Reader;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class ReaderWorker implements Callable<Integer> {
+
+    private final Logger logger = LogManager.getLogger(ReaderWorker.class);
 
     private final Reader reader;
     private final JobContext context;
@@ -21,11 +25,16 @@ public class ReaderWorker implements Callable<Integer> {
     }
 
     @Override
-    public Integer call() throws Exception {
+    public Integer call() {
         Thread.currentThread().setContextClassLoader(reader.getClass().getClassLoader());
         reader.prepare(context, readerConfig);
-        reader.execute(rc);
-        reader.close();
+        try {
+            reader.execute(rc);
+        } catch (Throwable e) {
+            context.setReaderError(true);
+        } finally {
+            reader.close();
+        }
         return 0;
     }
 
