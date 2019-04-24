@@ -42,7 +42,6 @@ public class KafkaReader extends Reader {
 		try {
 			while (!t.getState().equals(State.TERMINATED)) {
 				Thread.sleep(1000);
-
 				sleepedSecond++;
 				if (sleepedSecond >= maxWaitingSeconds) {
 					consumer.stop();

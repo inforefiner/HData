@@ -46,7 +46,7 @@ public class JDBCSplitter extends Splitter {
             long count = JdbcUtils.getCount(conn, sql.replace(CONDITIONS, "(1 = 1)"));
             if (count > 0) {
                 long step = maxFetchSize;
-                iterator.add(new JDBCIterator.JDBCUnit2(driver, sql, columns, splitColumn, table, 0, count, step, parallelism));
+                iterator.add(new JDBCIterator.JdbcUnit(driver, sql, columns, splitColumn, table, 0, count, step, parallelism));
             }
         }
         for (int i = 0; i < parallelism; i++) {
