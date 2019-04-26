@@ -144,7 +144,6 @@ public class DataRpcService implements RpcCallable {
                         File file = File.createTempFile("dubbo-" + System.currentTimeMillis(), ".cache");
                         file.deleteOnExit();
                         registry.setFile(file.getPath());
-
                         logger.info("cached registry file in " + file.getPath());
                     } catch (IOException e) {
                         e.printStackTrace();
@@ -157,6 +156,7 @@ public class DataRpcService implements RpcCallable {
 
                     ConsumerConfig consumerConfig = new ConsumerConfig();
                     consumerConfig.setSticky(true);
+                    consumerConfig.setTimeout(60 * 1000);
                     reference.setConsumer(consumerConfig);
 
                     try {

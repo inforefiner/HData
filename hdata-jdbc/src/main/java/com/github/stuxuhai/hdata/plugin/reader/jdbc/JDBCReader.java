@@ -60,7 +60,6 @@ public class JDBCReader extends Reader {
             decimalFormat = new DecimalFormat(numberFormat);
         }
 
-        connection = getConnection();
         sqlPiece = (JDBCIterator) readerConfig.get(JDBCReaderProperties.SQL_ITERATOR);
         sqlList = (List<String>) readerConfig.get(JDBCReaderProperties.SQL);
         if (sqlPiece != null) {
@@ -89,7 +88,7 @@ public class JDBCReader extends Reader {
         throw new HDataException("can't get connection with " + url);
     }
 
-    private Statement getStatement() {
+    private synchronized Statement getStatement() {
         try {
             if (connection == null || connection.isClosed()) {
                 connection = getConnection();
@@ -105,10 +104,10 @@ public class JDBCReader extends Reader {
         throw new HDataException("can't create statement");
     }
 
-
     @Override
     public void execute(RecordCollector recordCollector) {
         Statement statement = null;
+        int total = 0;
         try {
             statement = getStatement();
             if (sqlPiece != null) {
@@ -117,11 +116,11 @@ public class JDBCReader extends Reader {
                     if (sql == null) {
                         break;
                     }
-                    executeSingle(statement, sql, recordCollector);
+                    total += executeSingle(statement, sql, recordCollector);
                 }
             } else if (sqlList != null && sqlList.size() > 0) {
                 for (String sql : sqlList) {
-                    executeSingle(statement, sql, recordCollector);
+                    total += executeSingle(statement, sql, recordCollector);
                 }
             } else {
                 throw new HDataException("sql 分片 为空");
@@ -138,9 +137,10 @@ public class JDBCReader extends Reader {
                 }
             }
         }
+        logger.info("reader execute done, total reads =  {} ", total);
     }
 
-    private void executeSingle(Statement statement, String sql, RecordCollector recordCollector) throws Throwable {
+    private int executeSingle(Statement statement, String sql, RecordCollector recordCollector) throws Throwable {
         int rows = 0;
         long startTime = System.currentTimeMillis();
         ResultSet rs = null;
@@ -222,6 +222,7 @@ public class JDBCReader extends Reader {
                 e.printStackTrace();
             }
         }
+        return rows;
     }
 
     @Override
