@@ -122,12 +122,10 @@ public class HData {
         metric.setWriterStartTime(System.currentTimeMillis());
         while (!es.isTerminated()) {
             if (context.isReaderError() || context.isWriterError()) {
-                LOGGER.info("Reader or Writer has error.");
-                LOGGER.info("Closing reader and writer.");
-                // storage.close();
+                LOGGER.info("Reader or Writer has error, closing readers and writers.");
                 closeReaders(readers);
                 closeWriters(writers);
-                LOGGER.info("Job run failed!");
+                LOGGER.info("TASK FAILED");
                 System.exit(JobStatus.FAILED.getStatus());
             }
             Utils.sleep(sleepMillis);
@@ -139,9 +137,9 @@ public class HData {
 
         while (!storage.isEmpty()) {
             if (context.isWriterError()) {
-                LOGGER.info("Write error.");
+                LOGGER.info("Writer has error, closing writers.");
                 closeWriters(writers);
-                LOGGER.info("Job run failed!");
+                LOGGER.info("TASK FAILED");
                 System.exit(JobStatus.FAILED.getStatus());
             }
             Utils.sleep(sleepMillis);
@@ -155,22 +153,18 @@ public class HData {
             try {
                 Future<Integer> future = cs.take();
                 if (future == null) {
-                    LOGGER.info("Read error.");
+                    LOGGER.info("TASK FAILED");
                     closeWriters(writers);
-                    LOGGER.info("Job run failed!");
                 }
-
                 Integer result = future.get();
                 if (result == null) {
                     result = -1;
                 }
-
                 if (result != 0) {
-                    LOGGER.info("Read error.");
+                    LOGGER.info("TASK FAILED");
                     closeWriters(writers);
-                    LOGGER.info("Job run failed!");
                 }
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 LOGGER.error(Throwables.getStackTraceAsString(e));
                 exitCode = 1;
             }
@@ -188,6 +182,8 @@ public class HData {
         LOGGER.info("Read records: {}/s, Write records: {}/s", readSpeed, writeSpeed);
 
         LOGGER.info("TASK ALL DONE");
+
+        System.exit(JobStatus.SUCCESS.getStatus());
     }
 
     private DefaultStorage createStorage(int bufferSize, String WaitStrategyName, int producerCount, RecordWorkHandler[] handlers,

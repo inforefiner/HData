@@ -201,11 +201,6 @@ public class JdbcUtils {
         ResultSet rs = conn.getMetaData().getPrimaryKeys(catalog, schema, table);
         if (rs.next()) {
             splitKey = rs.getString("COLUMN_NAME");
-        } else {
-            rs = conn.getMetaData().getColumns(catalog, schema, table, null);
-            if (rs.next()) {
-                splitKey = rs.getString("COLUMN_NAME");
-            }
         }
         return splitKey;
     }
@@ -256,7 +251,6 @@ public class JdbcUtils {
             case Types.FLOAT:
             case Types.DOUBLE:
                 return true;
-
             default:
                 return false;
         }

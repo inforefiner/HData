@@ -32,6 +32,7 @@ public class ReaderWorker implements Callable<Integer> {
             reader.execute(rc);
         } catch (Throwable e) {
             context.setReaderError(true);
+            context.setReaderErrorMsg(e.getMessage());
         } finally {
             reader.close();
         }

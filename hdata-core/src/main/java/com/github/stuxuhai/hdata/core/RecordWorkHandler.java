@@ -27,12 +27,17 @@ public class RecordWorkHandler implements WorkHandler<RecordEvent> {
 
     private void prepareWriter() {
         if (!writerPrepared) {
-            context.declareOutputFields();
-            Thread.currentThread().setContextClassLoader(writer.getClass().getClassLoader());
-            writer.prepare(context, writerConfig);
-            writerPrepared = true;
-            if (metric.getWriterStartTime() == 0) {
-                metric.setWriterStartTime(System.currentTimeMillis());
+            try {
+                context.declareOutputFields();
+                Thread.currentThread().setContextClassLoader(writer.getClass().getClassLoader());
+                writer.prepare(context, writerConfig);
+                writerPrepared = true;
+                if (metric.getWriterStartTime() == 0) {
+                    metric.setWriterStartTime(System.currentTimeMillis());
+                }
+            } catch (Throwable e) {
+                context.setWriterError(true);
+                throw new HDataException(e);
             }
         }
     }

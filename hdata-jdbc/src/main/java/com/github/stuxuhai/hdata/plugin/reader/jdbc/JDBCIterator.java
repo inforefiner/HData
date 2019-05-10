@@ -91,7 +91,6 @@ public class JDBCIterator {
             String pagingSql = "";
 
             if (JdbcUtils.isOracle(driver)) {
-//                pagingSql = "SELECT " + selectColumn + " FROM (" + currentSql.replace(JDBCSplitter.CONDITIONS, "ROWNUM <= " + tempEnd) + ") WHERE RN > " + tempStart;
                 pagingSql = "SELECT " + selectColumn + " FROM ( SELECT ROWNUM AS RN, T.* FROM (" + currentSql.replace(JDBCSplitter.CONDITIONS, "(1 = 1)") + ") T WHERE ROWNUM <= " + tempEnd + ") T2 WHERE T2.RN > " + tempStart;
             } else if (JdbcUtils.isDB2(driver)) {
                 pagingSql = "SELECT " + selectColumn + " FROM (" + currentSql.replace(JDBCSplitter.CONDITIONS, "(1 = 1)") + ") WHERE RN > " + tempStart + " and RN <= " + tempEnd;
@@ -100,7 +99,6 @@ public class JDBCIterator {
             } else if (JdbcUtils.isSqlServer(driver)) {
                 currentSql = currentSql.replace("SELECT", "SELECT TOP " + step);
                 pagingSql = currentSql.replace(JDBCSplitter.CONDITIONS, splitColumn + " NOT IN (SELECT TOP " + tempStart + " " + splitColumn + " FROM " + table + ")");
-//                pagingSql = "SELECT top " + step + " " + selectColumn + " FROM (" + currentSql.replace(JDBCSplitter.CONDITIONS, "(1 = 1)") + ") TEMP WHERE RN > " + tempStart;
             } else {
                 pagingSql = currentSql.replace(JDBCSplitter.CONDITIONS, "(1 = 1)") + " LIMIT " + tempStart + "," + step;
             }

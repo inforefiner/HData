@@ -145,6 +145,7 @@ public class JDBCSplitter extends Splitter {
             conn.setSchema(schema);
 
             String splitKey = JdbcUtils.getSplitKey(conn, catalog, schema, table);
+            LOG.info("Not found split key in table {}", table);
 //            if (JdbcUtils.isOracle(driver)) {
 //                sql.append(", ROWNUM RN");
 //            }

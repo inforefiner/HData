@@ -64,11 +64,11 @@ public class DubboWriter extends Writer {
             try {
                 rpcService.setup(tenantId, taskId, writerConfig);
             } catch (Throwable e) {
-                throw new RuntimeException("can't connect europa data server", e);
+                throw new RuntimeException("can't connect datahub server", e);
             }
         }
 
-        rpcService.prepare(tenantId, taskId, channelId);
+        rpcService.prepare(tenantId, taskId, channelId, jobContext);
 
         writerCounter.incrementAndGet();
     }

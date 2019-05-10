@@ -5,6 +5,7 @@ import com.alibaba.dubbo.config.ConsumerConfig;
 import com.alibaba.dubbo.config.ReferenceConfig;
 import com.alibaba.dubbo.config.RegistryConfig;
 import com.github.stuxuhai.hdata.api.Configuration;
+import com.github.stuxuhai.hdata.api.JobContext;
 import com.github.stuxuhai.hdata.api.Record;
 import com.merce.woven.data.rpc.FileService;
 import org.apache.logging.log4j.LogManager;
@@ -17,6 +18,7 @@ public class FileRpcService implements RpcCallable {
     private String tenantId;
     private String taskId;
     private String channelId;
+    private JobContext jobContext;
 
     private static FileService fileService;
 
@@ -28,17 +30,17 @@ public class FileRpcService implements RpcCallable {
         }
         try {
             fileService.prepare(tenantId, taskId, configuration);
-        } catch (Exception e) {
-            logger.error("can't connect europa data server", e);
-            throw new RuntimeException("can't connect europa data server");
+        } catch (Throwable e) {
+            throw new RuntimeException("file service.prepare error", e);
         }
     }
 
     @Override
-    public void prepare(String tenantId, String taskId, String channelId) {
+    public void prepare(String tenantId, String taskId, String channelId, JobContext jobContext) {
         this.channelId = channelId;
         this.tenantId = tenantId;
         this.taskId = taskId;
+        this.jobContext = jobContext;
     }
 
     @Override
@@ -49,6 +51,7 @@ public class FileRpcService implements RpcCallable {
         long modificationTime = (long) record.get(3);
         int ret = fileService.execute(tenantId, taskId, channelId, orgPath, dstPath, size, modificationTime);
         if (ret == -1) {
+            jobContext.setWriterError(true);
             logger.error("task {} channel {} has error when flush data. the data server maybe lost.", taskId, channelId);
         }
     }
@@ -56,7 +59,11 @@ public class FileRpcService implements RpcCallable {
     @Override
     public void close(long total, boolean isLast) {
         if (fileService != null) {
-            fileService.onFinish(tenantId, taskId, channelId, total, isLast);
+            if (jobContext.isReaderError() || jobContext.isWriterError()) {
+                fileService.onError(tenantId, taskId, channelId, new RuntimeException("reader or writer has error !"));
+            } else {
+                fileService.onFinish(tenantId, taskId, channelId, total, isLast);
+            }
         }
     }
 
@@ -83,6 +90,7 @@ public class FileRpcService implements RpcCallable {
 
                     ConsumerConfig consumerConfig = new ConsumerConfig();
                     consumerConfig.setSticky(true);
+                    consumerConfig.setTimeout(60 * 1000);
                     reference.setConsumer(consumerConfig);
 
                     try {

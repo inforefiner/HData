@@ -5,6 +5,7 @@ import com.alibaba.dubbo.config.ConsumerConfig;
 import com.alibaba.dubbo.config.ReferenceConfig;
 import com.alibaba.dubbo.config.RegistryConfig;
 import com.github.stuxuhai.hdata.api.Configuration;
+import com.github.stuxuhai.hdata.api.JobContext;
 import com.github.stuxuhai.hdata.api.Record;
 import com.merce.woven.data.rpc.DataService;
 import org.apache.logging.log4j.LogManager;
@@ -30,6 +31,7 @@ public class DataRpcService implements RpcCallable {
     private String tenantId;
     private String taskId;
     private String channelId;
+    private JobContext jobContext;
 
     private static DataService dataService;
 
@@ -49,9 +51,8 @@ public class DataRpcService implements RpcCallable {
         }
         try {
             dataService.prepare(tenantId, taskId, configuration);
-        } catch (Exception e) {
-            logger.error("can't connect data server", e);
-            throw new RuntimeException("can't connect data server");
+        } catch (Throwable e) {
+            throw new RuntimeException("data service prepare error", e);
         }
 
         bufferSize = configuration.getInt("buffer.size", DEFAULT_BUFFER_SIZE);
@@ -59,10 +60,11 @@ public class DataRpcService implements RpcCallable {
     }
 
     @Override
-    public void prepare(String tenantId, String taskId, String channelId) {
+    public void prepare(String tenantId, String taskId, String channelId, JobContext jobContext) {
         this.tenantId = tenantId;
         this.taskId = taskId;
         this.channelId = channelId;
+        this.jobContext = jobContext;
         this.bufferQueue = new ArrayBlockingQueue(bufferSize, true);
         Thread t = new Thread(new DataSender());
         t.setDaemon(true);
@@ -71,9 +73,6 @@ public class DataRpcService implements RpcCallable {
 
     @Override
     public void execute(Record record) {
-        if (hasError) {
-            throw new RuntimeException("data service has error");
-        }
         try {
             bufferQueue.put(record.strings());
         } catch (InterruptedException e) {
@@ -88,7 +87,11 @@ public class DataRpcService implements RpcCallable {
             if (bufferQueue != null && bufferQueue.size() > 0) {
                 flushData();
             }
-            dataService.onFinish(tenantId, taskId, channelId, total, isLast);
+            if (jobContext.isReaderError() || jobContext.isWriterError()) {
+                dataService.onError(tenantId, taskId, channelId, new RuntimeException("reader or writer has error !"));
+            } else {
+                dataService.onFinish(tenantId, taskId, channelId, total, isLast);
+            }
         }
     }
 
@@ -99,29 +102,38 @@ public class DataRpcService implements RpcCallable {
                 if (bufferQueue.remainingCapacity() == 0 || (!bufferQueue.isEmpty() && (System.currentTimeMillis() - lastFlushTime) > flushPaddingTime)) {
                     try {
                         flushData();
-                    } catch (Exception e) {
-                        hasError = true;
-                        logger.error(e);
+                    } catch (Throwable e) {
+                        jobContext.setWriterError(true);
+                        logger.error("flush data error", e);
+                    }
+                } else {
+                    try {
+                        Thread.sleep(1);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
                     }
                 }
             }
         }
     }
 
-    private int flushData() {
+    private synchronized int flushData() {
         lastFlushTime = System.currentTimeMillis();
         long l = System.currentTimeMillis();
         List list = new ArrayList();
         bufferQueue.drainTo(list);
-        byte[] bytes = ByteUtil.toByteArray(list);
-        int length = bytes.length;
-        byte[] compressed = Lz4Util.compress(bytes, length);
-        int ret = dataService.execute(tenantId, taskId, channelId, compressed, length, list.size());
-        if (ret == -1) {
-            logger.error("task {} channel {} has error when flush data. the data server maybe lost.", taskId, channelId);
-            hasError = true;
-        } else {
-            logger.info("task {} channel {} has flush {} records, size is {}, use time {} ms", taskId, channelId, list.size(), length, System.currentTimeMillis() - l);
+        int ret = 0;
+        if (list.size() > 0) {
+            byte[] bytes = ByteUtil.toByteArray(list);
+            int length = bytes.length;
+            byte[] compressed = Lz4Util.compress(bytes, length);
+            ret = dataService.execute(tenantId, taskId, channelId, compressed, length, list.size());
+            if (ret == -1) {
+                jobContext.setWriterError(true);
+                logger.error("task {} channel {} has error when flush data. the data server maybe lost.", taskId, channelId);
+            } else {
+                logger.info("task {} channel {} has flush {} records, size is {}, use time {} ms", taskId, channelId, list.size(), length, System.currentTimeMillis() - l);
+            }
         }
         return ret;
     }
@@ -148,6 +160,7 @@ public class DataRpcService implements RpcCallable {
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
+
                     ReferenceConfig<DataService> reference = new ReferenceConfig<DataService>();
                     reference.setApplication(application);
                     reference.setRegistry(registry); // 多个注册中心可以用setRegistries()
@@ -161,7 +174,7 @@ public class DataRpcService implements RpcCallable {
 
                     try {
                         dataService = reference.get();
-                    } catch (Exception e) {
+                    } catch (Throwable e) {
                         logger.error("can't connect registry rpc-data-service", e);
                     }
                 }
