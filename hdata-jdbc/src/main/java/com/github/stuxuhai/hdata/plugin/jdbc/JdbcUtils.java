@@ -122,6 +122,10 @@ public class JdbcUtils {
         return driver.indexOf("postgresql") > -1 ? true : false;
     }
 
+    public static boolean isKingBase(String driver) {
+        return driver.indexOf("kingbase") > -1 ? true : false;
+    }
+
     public static boolean isSqlServer(String driver) {
         return driver.indexOf("sqlserver") > -1 ? true : false;
     }

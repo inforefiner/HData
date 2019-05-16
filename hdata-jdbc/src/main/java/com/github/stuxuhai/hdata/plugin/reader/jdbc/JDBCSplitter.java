@@ -142,7 +142,10 @@ public class JDBCSplitter extends Splitter {
             } catch (Throwable e) {
             }
             conn.setCatalog(catalog);
-            conn.setSchema(schema);
+
+            if(!JdbcUtils.isKingBase(driver)){
+                conn.setSchema(schema);
+            }
 
             String splitKey = JdbcUtils.getSplitKey(conn, catalog, schema, table);
             logger.info("Not found split key in table {}", table);
