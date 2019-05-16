@@ -1,11 +1,12 @@
 package com.github.stuxuhai.hdata.ftp;
 
-import org.apache.commons.net.ftp.*;
+import org.apache.commons.net.ftp.FTP;
+import org.apache.commons.net.ftp.FTPClient;
+import org.apache.commons.net.ftp.FTPFile;
+import org.apache.commons.net.ftp.FTPReply;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.SocketException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 

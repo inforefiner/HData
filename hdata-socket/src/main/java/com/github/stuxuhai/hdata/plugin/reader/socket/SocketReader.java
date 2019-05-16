@@ -4,8 +4,8 @@ import com.github.stuxuhai.hdata.api.*;
 import com.github.stuxuhai.hdata.plugin.reader.socket.netty.Receiver;
 import com.github.stuxuhai.hdata.plugin.reader.socket.utils.JsonBuilder;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -14,7 +14,7 @@ import java.util.regex.Pattern;
 
 public class SocketReader extends Reader {
 
-    private static final Logger LOGGER = LogManager.getLogger(SocketReader.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(SocketReader.class);
     private static final String ALL_MATCH_COLUMN = "_match_all_";
     private static final String KEY_MATCH_COLUMN = "_match_key_";
 

@@ -9,16 +9,15 @@ import com.github.stuxuhai.hdata.ftp.FtpOperator;
 import com.github.stuxuhai.hdata.ftp.FtpsClient;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
-import org.apache.commons.net.ftp.FTPClient;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class FTPSplitter extends Splitter {
 
-    private static final Logger LOGGER = LogManager.getLogger(FTPSplitter.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(FTPSplitter.class);
 
     @Override
     public List<PluginConfig> split(JobConfig jobConfig) {

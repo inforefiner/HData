@@ -4,9 +4,8 @@ import com.github.stuxuhai.hdata.api.JobContext;
 import com.github.stuxuhai.hdata.api.PluginConfig;
 import com.github.stuxuhai.hdata.api.Record;
 import com.github.stuxuhai.hdata.api.Writer;
-import com.github.stuxuhai.hdata.exception.HDataException;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.Timestamp;
 import java.text.DateFormat;
@@ -15,7 +14,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public class ConsoleWriter extends Writer {
 
-    private static final Logger LOG = LogManager.getLogger(ConsoleWriter.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ConsoleWriter.class);
 
     private DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 

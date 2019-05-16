@@ -9,10 +9,6 @@ import com.google.common.base.Throwables;
 import org.apache.commons.cli.*;
 import org.apache.commons.lang.SystemUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.core.LoggerContext;
-import org.apache.logging.log4j.core.config.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,6 +17,7 @@ import java.lang.management.ManagementFactory;
 import java.net.URLDecoder;
 import java.util.Map.Entry;
 import java.util.Properties;
+
 
 public class CliDriver {
 
@@ -140,10 +137,6 @@ public class CliDriver {
         try {
             cmd = parser.parse(options, args);
             if (cmd.hasOption(QUIET_OPTION)) {
-                LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
-                Configuration conf = ctx.getConfiguration();
-                conf.getLoggerConfig(LogManager.ROOT_LOGGER_NAME).setLevel(Level.WARN);
-                ctx.updateLoggers(conf);
             }
 
             final DefaultJobConfig jobConfig;

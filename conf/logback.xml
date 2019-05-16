@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <appender name="console" class="com.github.stuxuhai.hdata.logger.ConsoleAppender">
+        <encoder>
+            <pattern>%d [%thread] %-5level %logger{36} [%file : %line] - %msg%n</pattern>
+        </encoder>
+        <!--<immediateFlush>false</immediateFlush>-->
+    </appender>
+    <root>
+        <level value="info" />
+        <appender-ref ref="console"/>
+    </root>
+</configuration>

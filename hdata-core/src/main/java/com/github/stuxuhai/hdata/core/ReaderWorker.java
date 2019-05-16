@@ -1,16 +1,12 @@
 package com.github.stuxuhai.hdata.core;
 
-import java.util.concurrent.Callable;
-
 import com.github.stuxuhai.hdata.api.JobContext;
 import com.github.stuxuhai.hdata.api.PluginConfig;
 import com.github.stuxuhai.hdata.api.Reader;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
+import java.util.concurrent.Callable;
 
 public class ReaderWorker implements Callable<Integer> {
-
-    private final Logger logger = LogManager.getLogger(ReaderWorker.class);
 
     private final Reader reader;
     private final JobContext context;

@@ -8,8 +8,8 @@ import com.github.stuxuhai.hdata.api.Configuration;
 import com.github.stuxuhai.hdata.api.JobContext;
 import com.github.stuxuhai.hdata.api.Record;
 import com.merce.woven.data.rpc.DataService;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -20,7 +20,7 @@ import java.util.concurrent.BlockingQueue;
 
 public class DataRpcService implements RpcCallable {
 
-    private static final Logger logger = LogManager.getLogger(DataRpcService.class);
+    private final Logger logger = LoggerFactory.getLogger(DataRpcService.class);
 
     private static int DEFAULT_BUFFER_SIZE = 5000;
     private static long MAX_FLUSH_PADDING_TIME = 1000 * 30;
@@ -45,7 +45,7 @@ public class DataRpcService implements RpcCallable {
 
     @Override
     public void setup(String tenantId, String taskId, Configuration configuration) {
-        dataService = ConnectWriterServer(configuration);
+        dataService = connectWriterServer(configuration);
         if (dataService == null) {
             throw new RuntimeException("target server out of service ! ");
         }
@@ -132,13 +132,14 @@ public class DataRpcService implements RpcCallable {
                 jobContext.setWriterError(true);
                 logger.error("task {} channel {} has error when flush data. the data server maybe lost.", taskId, channelId);
             } else {
-                logger.info("task {} channel {} has flush {} records, size is {}, use time {} ms", taskId, channelId, list.size(), length, System.currentTimeMillis() - l);
+                logger.debug("task {} channel {} has flush {} records, size is {}, use time {} ms", taskId, channelId,
+                        list.size(), length, System.currentTimeMillis() - l);
             }
         }
         return ret;
     }
 
-    public static DataService ConnectWriterServer(Configuration writerConfig) {
+    public DataService connectWriterServer(Configuration writerConfig) {
         if (dataService == null) {
             synchronized (DataService.class) {
                 if (dataService == null) {

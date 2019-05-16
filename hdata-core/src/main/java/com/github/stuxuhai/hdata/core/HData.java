@@ -21,9 +21,8 @@ import java.util.concurrent.*;
 
 public class HData {
 
-    private int exitCode = 0;
-    private static final DecimalFormat decimalFormat = new DecimalFormat("#0.00");
-    private static final Logger LOGGER = LoggerFactory.getLogger(HData.class);
+    private final DecimalFormat decimalFormat = new DecimalFormat("#0.00");
+    private final Logger LOGGER = LoggerFactory.getLogger(HData.class);
 
     public void start(final DefaultJobConfig jobConfig) {
         final PluginConfig readerConfig = jobConfig.getReaderConfig();
@@ -166,7 +165,6 @@ public class HData {
                 }
             } catch (Throwable e) {
                 LOGGER.error(Throwables.getStackTraceAsString(e));
-                exitCode = 1;
             }
         }
 

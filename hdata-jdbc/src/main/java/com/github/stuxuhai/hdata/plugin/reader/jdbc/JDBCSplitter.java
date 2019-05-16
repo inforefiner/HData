@@ -10,8 +10,8 @@ import com.github.stuxuhai.hdata.util.NumberUtils;
 import com.google.common.base.Preconditions;
 import org.apache.commons.dbutils.DbUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.util.ArrayList;
@@ -26,11 +26,11 @@ public class JDBCSplitter extends Splitter {
     public static final String CONDITIONS = "$CONDITIONS";
     private static final Pattern PATTERN = Pattern.compile("^([a-zA-Z]\\w*)(\\[(\\d+)-(\\d+)\\])?(_(\\d+)_(\\d+)_(\\d+))?$");
 
-    private static final Logger LOG = LogManager.getLogger(JDBCSplitter.class);
+    private final Logger logger = LoggerFactory.getLogger(JDBCSplitter.class);
 
     private void checkIfContainsConditionKey(String sql, String errorMessage) {
         if (!sql.contains(CONDITIONS)) {
-            LOG.error(errorMessage);
+            logger.error(errorMessage);
         }
     }
 
@@ -106,7 +106,7 @@ public class JDBCSplitter extends Splitter {
         String cursorType = readerConfig.getString(JDBCReaderProperties.CURSOR_TYPE);
         String cursorValue = readerConfig.getString(JDBCReaderProperties.CURSOR_VALUE);
 
-        LOG.info("splitting cursorColumn = {}, cursorType = {}, cursorValue = {}, parallelism = {}", cursorColumn, cursorType, cursorValue, parallelism);
+        logger.info("splitting cursorColumn = {}, cursorType = {}, cursorValue = {}, parallelism = {}", cursorColumn, cursorType, cursorValue, parallelism);
 
         List<String> sqlList = new ArrayList<String>();
 
@@ -114,7 +114,7 @@ public class JDBCSplitter extends Splitter {
 
         Preconditions.checkNotNull(table, "JDBC reader required property: table");
 
-        LOG.info("building sql for table: {}", table);
+        logger.info("building sql for table: {}", table);
 
         StringBuilder sql = new StringBuilder();
         sql.append("SELECT ");
@@ -145,13 +145,14 @@ public class JDBCSplitter extends Splitter {
             conn.setSchema(schema);
 
             String splitKey = JdbcUtils.getSplitKey(conn, catalog, schema, table);
-            LOG.info("Not found split key in table {}", table);
-//            if (JdbcUtils.isOracle(driver)) {
-//                sql.append(", ROWNUM RN");
-//            }
+            logger.info("Not found split key in table {}", table);
+
             if (JdbcUtils.isDB2(driver)) {
                 sql.append(", ROW_NUMBER() OVER() AS RN");
             }
+            //            if (JdbcUtils.isOracle(driver)) {
+//                sql.append(", ROWNUM RN");
+//            }
 //            if (JdbcUtils.isSqlServer(driver)) {
 //                sql.append(", ROW_NUMBER() OVER(ORDER BY " + splitKey + " ASC) AS RN");
 //            }
@@ -190,7 +191,7 @@ public class JDBCSplitter extends Splitter {
             sqlList.add(sql.toString());
 
             if (parallelism > 1 || maxFetchSize > 0) {
-                LOG.info("table {} find digital primary key: {}", table, splitKey);
+                logger.info("table {} find digital primary key: {}", table, splitKey);
                 return buildPluginConfigs(conn, sqlList, splitKey, readerConfig);
             }
 

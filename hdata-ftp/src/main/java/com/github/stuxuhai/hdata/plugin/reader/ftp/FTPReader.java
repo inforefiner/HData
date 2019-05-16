@@ -1,16 +1,15 @@
 package com.github.stuxuhai.hdata.plugin.reader.ftp;
 
-import com.github.stuxuhai.hdata.api.*;
 import com.github.stuxuhai.hdata.api.Reader;
+import com.github.stuxuhai.hdata.api.*;
 import com.github.stuxuhai.hdata.exception.HDataException;
 import com.github.stuxuhai.hdata.ftp.*;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.net.ftp.FTPClient;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.io.IOUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -19,7 +18,7 @@ import java.util.zip.GZIPInputStream;
 
 public class FTPReader extends Reader {
 
-    private static final Logger LOG = LogManager.getLogger(FTPReader.class);
+    private final Logger LOG = LoggerFactory.getLogger(FTPReader.class);
 
     private Fields fields;
     private String host;

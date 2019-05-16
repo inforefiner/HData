@@ -5,14 +5,14 @@ import com.github.stuxuhai.hdata.api.*;
 import com.github.stuxuhai.hdata.plugin.reader.http.client.GetClient;
 import com.github.stuxuhai.hdata.plugin.reader.http.client.JsonBuilder;
 import com.github.stuxuhai.hdata.plugin.reader.http.client.PostClient;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Iterator;
 
 public class HttpReader extends Reader {
 
-    private static final Logger LOG = LogManager.getLogger(HttpReader.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HttpReader.class);
 
     private String urlstr = null;
     private String method = null;

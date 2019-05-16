@@ -8,12 +8,12 @@ import com.github.stuxuhai.hdata.api.Configuration;
 import com.github.stuxuhai.hdata.api.JobContext;
 import com.github.stuxuhai.hdata.api.Record;
 import com.merce.woven.data.rpc.FileService;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class FileRpcService implements RpcCallable {
 
-    private static final Logger logger = LogManager.getLogger(DataRpcService.class);
+    private final Logger logger = LoggerFactory.getLogger(DataRpcService.class);
 
     private String tenantId;
     private String taskId;
@@ -24,7 +24,7 @@ public class FileRpcService implements RpcCallable {
 
     @Override
     public void setup(String tenantId, String taskId, Configuration configuration) {
-        fileService = ConnectWriterServer(configuration);
+        fileService = connectWriterServer(configuration);
         if (fileService == null) {
             throw new RuntimeException("target server out of service ! ");
         }
@@ -67,7 +67,7 @@ public class FileRpcService implements RpcCallable {
         }
     }
 
-    public static FileService ConnectWriterServer(Configuration writerConfig) {
+    public FileService connectWriterServer(Configuration writerConfig) {
         if (fileService == null) {
             synchronized (FileService.class) {
                 if (fileService == null) {

@@ -1,30 +1,23 @@
 package com.github.stuxuhai.hdata.plugin.writer.jdbc;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.sql.Types;
-import java.text.SimpleDateFormat;
-import java.util.Arrays;
-import java.util.Map;
-
-import org.apache.commons.dbutils.DbUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import com.github.stuxuhai.hdata.api.Fields;
-import com.github.stuxuhai.hdata.api.JobContext;
-import com.github.stuxuhai.hdata.api.PluginConfig;
-import com.github.stuxuhai.hdata.api.Record;
-import com.github.stuxuhai.hdata.api.Writer;
+import com.github.stuxuhai.hdata.api.*;
 import com.github.stuxuhai.hdata.common.Constants;
 import com.github.stuxuhai.hdata.exception.HDataException;
 import com.github.stuxuhai.hdata.plugin.jdbc.JdbcUtils;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
+import org.apache.commons.dbutils.DbUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.sql.*;
+import java.text.SimpleDateFormat;
+import java.util.Arrays;
+import java.util.Map;
 
 public class JDBCWriter extends Writer {
+
+    private static final int DEFAULT_BATCH_INSERT_SIZE = 10000;
 
     private Connection connection = null;
     private PreparedStatement statement = null;
@@ -35,8 +28,7 @@ public class JDBCWriter extends Writer {
     private String table;
     private Map<String, Integer> columnTypes;
     private final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat(Constants.DATE_FORMAT_STRING);
-    private static final int DEFAULT_BATCH_INSERT_SIZE = 10000;
-    private static final Logger LOG = LogManager.getLogger(JDBCWriter.class);
+    private final Logger logger = LoggerFactory.getLogger(JDBCWriter.class);
 
     @Override
     public void prepare(JobContext context, PluginConfig writerConfig) {
@@ -77,7 +69,7 @@ public class JDBCWriter extends Writer {
                 sql = String.format("INSERT INTO %s(%s) VALUES(%s)",
                         new Object[] { table, keywordEscaper + Joiner.on(keywordEscaper + ", " + keywordEscaper).join(this.schema) + keywordEscaper,
                                 Joiner.on(", ").join(placeholder) });
-                LOG.debug(sql);
+                logger.debug(sql);
                 this.statement = this.connection.prepareStatement(sql);
             } else if (this.columns != null) {
                 String[] placeholder = new String[this.columns.size()];
@@ -85,7 +77,7 @@ public class JDBCWriter extends Writer {
                 sql = String.format("INSERT INTO %s(%s) VALUES(%s)",
                         new Object[] { table, keywordEscaper + Joiner.on(keywordEscaper + ", " + keywordEscaper).join(this.columns) + keywordEscaper,
                                 Joiner.on(", ").join(placeholder) });
-                LOG.debug(sql);
+                logger.debug(sql);
                 this.statement = this.connection.prepareStatement(sql);
             }
         } catch (Exception e) {
@@ -100,7 +92,7 @@ public class JDBCWriter extends Writer {
                 String[] placeholder = new String[record.size()];
                 Arrays.fill(placeholder, "?");
                 String sql = String.format("INSERT INTO %s VALUES(%s)", table, Joiner.on(", ").join(placeholder));
-                LOG.debug(sql);
+                logger.debug(sql);
                 statement = connection.prepareStatement(sql);
             }
 

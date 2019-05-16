@@ -3,11 +3,10 @@ package com.github.stuxuhai.hdata.plugin.reader.jdbc;
 import com.github.stuxuhai.hdata.api.*;
 import com.github.stuxuhai.hdata.exception.HDataException;
 import com.github.stuxuhai.hdata.plugin.jdbc.JdbcUtils;
-import com.github.stuxuhai.hdata.plugin.jdbc.ParamUtils;
 import org.apache.commons.dbutils.DbUtils;
 import org.apache.commons.lang.StringUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.UnsupportedEncodingException;
 import java.sql.*;
@@ -16,7 +15,7 @@ import java.util.List;
 
 public class JDBCReader extends Reader {
 
-    private final Logger logger = LogManager.getLogger(JDBCReader.class);
+    private final Logger logger = LoggerFactory.getLogger(JDBCReader.class);
 
     private Connection connection;
     private JDBCIterator sqlPiece;
@@ -126,7 +125,7 @@ public class JDBCReader extends Reader {
                 throw new HDataException("sql 分片 为空");
             }
         } catch (Throwable e) {
-            logger.error(e);
+            logger.error("JdbcReader execute error", e);
             throw new HDataException(e);
         } finally {
             if (statement != null) {
@@ -145,9 +144,9 @@ public class JDBCReader extends Reader {
         long startTime = System.currentTimeMillis();
         ResultSet rs = null;
         try {
-            logger.info("execute query sql =  {} ", sql);
+            logger.debug("execute query sql =  {} ", sql);
             rs = statement.executeQuery(sql);
-            logger.info("execute query sql = {} done, fetch size = {}", sql, rs.getFetchSize());
+            logger.debug("execute query sql = {} done, fetch size = {}", sql, rs.getFetchSize());
         } catch (Throwable e) {
             logger.error("execute query error", e);
             throw e;
@@ -168,14 +167,14 @@ public class JDBCReader extends Reader {
                     Object o = null;
                     try {
                         o = rs.getObject(i);
-                    } catch (SQLException e) {
+                    } catch (Throwable e) {
                         o = "";
                     }
                     if (o != null && JdbcUtils.isClobType(columnTypes[i - 1])) {
                         Clob clob = (Clob) o;
                         try {
                             o = clob.getSubString(1, (int) clob.length());
-                        } catch (SQLException e) {
+                        } catch (Throwable e) {
                             o = "";
                         }
                     }
@@ -183,7 +182,7 @@ public class JDBCReader extends Reader {
                         Blob blob = (Blob) o;
                         try {
                             o = new String(blob.getBytes(1, (int) blob.length()), "UTF8");
-                        } catch (UnsupportedEncodingException e) {
+                        } catch (Throwable e) {
                             o = "";
                         }
                     }
@@ -210,7 +209,10 @@ public class JDBCReader extends Reader {
                 recordCollector.send(r);
                 rows++;
             }
-            logger.info("execute select sql =  {} , rows = {}, use time = {}", sql, rows, System.currentTimeMillis() - startTime);
+            long cost = System.currentTimeMillis() - startTime;
+            if (cost > 1000 * 10) {
+                logger.info("execute select sql =  {} , rows = {}, use time = {}", sql, rows, cost);
+            }
         } catch (Throwable e) {
             throw e;
         } finally {

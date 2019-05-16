@@ -45,10 +45,10 @@ JAVA_OPTS="$JAVA_OPTS -XX:SoftRefLRUPolicyMSPerMB=0"
 
 JAVA_OPTS="$JAVA_OPTS -Dhdata.plugins.path=$HDATA_PLUGINS_DIR"
 JAVA_OPTS="$JAVA_OPTS -Dhdata.conf.dir=$HDATA_CONF_DIR"
-JAVA_OPTS="$JAVA_OPTS -Dlog4j.configurationFile=file:///$HDATA_CONF_DIR/log4j2.xml"
+#JAVA_OPTS="$JAVA_OPTS -Dlog4j.configurationFile=file:///$HDATA_CONF_DIR/logback.xml"
 
 MAIN_CLASS="com.github.stuxuhai.hdata.CliDriver"
 
 echo "JAVA_OPTS = $JAVA_OPTS"
 
-exec "$JAVA" $JAVA_OPTS -cp "$HDATA_CLASSPATH" $MAIN_CLASS "$@"
+exec "$JAVA" $JAVA_OPTS -cp "$HDATA_CLASSPATH:$HDATA_CONF_DIR" $MAIN_CLASS "$@"

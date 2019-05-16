@@ -41,6 +41,8 @@ cp $HDATA_HOME/hdata-api/target/dependency/*.jar $HDATA_BUILD_HDATA_DIR/lib
 #cp $HDATA_HOME/hdata-cloud/target/*.jar $HDATA_BUILD_HDATA_DIR/cloud
 #cp $HDATA_HOME/hdata-cloud/target/dependency/*.jar $HDATA_BUILD_HDATA_DIR/cloud
 
+cd $HDATA_BUILD_DIR
+
 for f in $HDATA_HOME/hdata-*; do
     if [ $f != $HDATA_HOME/hdata-api -a $f != $HDATA_HOME/hdata-core ]; then
        pluginDir=$HDATA_BUILD_HDATA_DIR/plugins/${f##*-}
@@ -52,8 +54,6 @@ for f in $HDATA_HOME/hdata-*; do
        fi
     fi
 done
-
-cd $HDATA_BUILD_DIR
 
 EXCLUDE_LIST="csv excel hbase hdfs hive kafka cloud"
 for i in $EXCLUDE_LIST
