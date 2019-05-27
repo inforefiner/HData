@@ -13,5 +13,9 @@
 			<groupId>com.github.stuxuhai</groupId>
 			<artifactId>hdata-api</artifactId>
 		</dependency>
-	</dependencies>
+        <dependency>
+            <groupId>com.github.stuxuhai</groupId>
+            <artifactId>hdata-core</artifactId>
+        </dependency>
+    </dependencies>
 </project>

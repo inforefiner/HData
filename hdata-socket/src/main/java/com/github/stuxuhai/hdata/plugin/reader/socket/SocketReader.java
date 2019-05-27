@@ -1,6 +1,7 @@
 package com.github.stuxuhai.hdata.plugin.reader.socket;
 
 import com.github.stuxuhai.hdata.api.*;
+import com.github.stuxuhai.hdata.core.DefaultRecord;
 import com.github.stuxuhai.hdata.plugin.reader.socket.netty.Receiver;
 import com.github.stuxuhai.hdata.plugin.reader.socket.utils.JsonBuilder;
 import org.apache.commons.lang3.StringUtils;

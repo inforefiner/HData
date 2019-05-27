@@ -2,6 +2,7 @@ package com.github.stuxuhai.hdata.plugin.reader.http;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.github.stuxuhai.hdata.api.*;
+import com.github.stuxuhai.hdata.core.DefaultRecord;
 import com.github.stuxuhai.hdata.plugin.reader.http.client.GetClient;
 import com.github.stuxuhai.hdata.plugin.reader.http.client.JsonBuilder;
 import com.github.stuxuhai.hdata.plugin.reader.http.client.PostClient;

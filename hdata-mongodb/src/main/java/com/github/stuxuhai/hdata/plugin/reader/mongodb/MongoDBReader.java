@@ -1,6 +1,7 @@
 package com.github.stuxuhai.hdata.plugin.reader.mongodb;
 
 import com.github.stuxuhai.hdata.api.*;
+import com.github.stuxuhai.hdata.core.DefaultRecord;
 import com.mongodb.BasicDBObject;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoCredential;

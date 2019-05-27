@@ -4,6 +4,7 @@ import com.alibaba.dubbo.config.ApplicationConfig;
 import com.alibaba.dubbo.config.ConsumerConfig;
 import com.alibaba.dubbo.config.ReferenceConfig;
 import com.alibaba.dubbo.config.RegistryConfig;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.stuxuhai.hdata.api.Configuration;
 import com.github.stuxuhai.hdata.api.JobContext;
 import com.github.stuxuhai.hdata.api.Record;
@@ -41,7 +42,9 @@ public class DataRpcService implements RpcCallable {
 
     private volatile long lastFlushTime = 0l;
 
-    private BlockingQueue<Object[]> bufferQueue;
+    private BlockingQueue<byte[]> bufferQueue;
+
+    private ObjectMapper objectMapper;
 
     @Override
     public void setup(String tenantId, String taskId, Configuration configuration) {
@@ -66,6 +69,7 @@ public class DataRpcService implements RpcCallable {
         this.channelId = channelId;
         this.jobContext = jobContext;
         this.bufferQueue = new ArrayBlockingQueue(bufferSize, true);
+        this.objectMapper = new ObjectMapper();
         Thread t = new Thread(new DataSender());
         t.setDaemon(true);
         t.start();
@@ -74,8 +78,9 @@ public class DataRpcService implements RpcCallable {
     @Override
     public void execute(Record record) {
         try {
-            bufferQueue.put(record.strings());
-        } catch (InterruptedException e) {
+            byte[] row = objectMapper.writeValueAsBytes(record.values());
+            bufferQueue.put(row);
+        } catch (Throwable e) {
             e.printStackTrace();
         }
     }

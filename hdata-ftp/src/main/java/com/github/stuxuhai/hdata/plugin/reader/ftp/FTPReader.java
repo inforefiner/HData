@@ -2,6 +2,7 @@ package com.github.stuxuhai.hdata.plugin.reader.ftp;
 
 import com.github.stuxuhai.hdata.api.Reader;
 import com.github.stuxuhai.hdata.api.*;
+import com.github.stuxuhai.hdata.core.DefaultRecord;
 import com.github.stuxuhai.hdata.exception.HDataException;
 import com.github.stuxuhai.hdata.ftp.*;
 import org.apache.commons.lang3.StringEscapeUtils;

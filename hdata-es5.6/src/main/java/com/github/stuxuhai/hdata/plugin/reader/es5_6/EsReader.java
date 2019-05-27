@@ -1,6 +1,7 @@
 package com.github.stuxuhai.hdata.plugin.reader.es5_6;
 
 import com.github.stuxuhai.hdata.api.*;
+import com.github.stuxuhai.hdata.core.DefaultRecord;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

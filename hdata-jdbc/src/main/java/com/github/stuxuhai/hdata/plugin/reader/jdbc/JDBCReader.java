@@ -1,6 +1,7 @@
 package com.github.stuxuhai.hdata.plugin.reader.jdbc;
 
 import com.github.stuxuhai.hdata.api.*;
+import com.github.stuxuhai.hdata.core.DefaultRecord;
 import com.github.stuxuhai.hdata.exception.HDataException;
 import com.github.stuxuhai.hdata.plugin.jdbc.JdbcUtils;
 import org.apache.commons.dbutils.DbUtils;
@@ -8,7 +9,6 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.UnsupportedEncodingException;
 import java.sql.*;
 import java.text.DecimalFormat;
 import java.util.List;

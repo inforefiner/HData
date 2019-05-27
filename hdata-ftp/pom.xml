@@ -142,5 +142,9 @@
                 </exclusion>
             </exclusions>
         </dependency>
-	</dependencies>
+        <dependency>
+            <groupId>com.github.stuxuhai</groupId>
+            <artifactId>hdata-core</artifactId>
+        </dependency>
+    </dependencies>
 </project>

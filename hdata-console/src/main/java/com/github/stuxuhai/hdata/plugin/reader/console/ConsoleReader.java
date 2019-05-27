@@ -1,6 +1,7 @@
 package com.github.stuxuhai.hdata.plugin.reader.console;
 
 import com.github.stuxuhai.hdata.api.*;
+import com.github.stuxuhai.hdata.core.DefaultRecord;
 import com.github.stuxuhai.hdata.exception.HDataException;
 
 import java.io.BufferedReader;

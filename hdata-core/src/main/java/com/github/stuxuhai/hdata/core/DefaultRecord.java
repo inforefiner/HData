@@ -4,30 +4,30 @@ import com.github.stuxuhai.hdata.api.Record;
 
 public class DefaultRecord implements Record {
 
-    private final Object[] fields;
+    private final Object[] values;
     private int cursor;
 
     public DefaultRecord(int fieldCount) {
-        fields = new Object[fieldCount];
+        values = new Object[fieldCount];
     }
 
     @Override
     public void add(int index, Object field) {
-        fields[index] = field;
+        values[index] = field;
         this.cursor++;
     }
 
     @Override
     public Object[] values() {
-        return fields;
+        return values;
     }
 
     @Override
     public String[] strings() {
-        String[] arr = new String[fields.length];
-        for(int i = 0; i < fields.length; i ++){
-            if(fields[i] != null)
-                arr[i] = fields[i].toString();
+        String[] arr = new String[values.length];
+        for(int i = 0; i < values.length; i ++){
+            if(values[i] != null)
+                arr[i] = values[i].toString();
             else{
                 arr[i] = "";
             }
@@ -42,11 +42,11 @@ public class DefaultRecord implements Record {
 
     @Override
     public Object get(int index) {
-        return fields[index];
+        return values[index];
     }
 
     @Override
     public int size() {
-        return fields.length;
+        return values.length;
     }
 }
