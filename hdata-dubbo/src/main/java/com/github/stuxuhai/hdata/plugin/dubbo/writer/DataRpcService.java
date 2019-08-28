@@ -14,7 +14,6 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
@@ -120,14 +119,14 @@ public class DataRpcService implements RpcCallable {
     private synchronized int flushData() {
         lastFlushTime = System.currentTimeMillis();
         long l = System.currentTimeMillis();
-        List list = new ArrayList();
+        ArrayList list = new ArrayList();
         bufferQueue.drainTo(list);
         int ret = 0;
         if (list.size() > 0) {
-            byte[] bytes = ByteUtil.toByteArray(list);
+            byte[] bytes = KryoUtils.writeToByteBuffer(list);
+            logger.info("flushData() serialize {} bytes", bytes.length);
             int length = bytes.length;
-            byte[] compressed = Lz4Util.compress(bytes, length);
-            ret = dataService.execute(tenantId, taskId, channelId, compressed, length, list.size());
+            ret = dataService.execute(tenantId, taskId, channelId, bytes, length, list.size());
             if (ret == -1) {
                 jobContext.setWriterError(true);
                 logger.error("task {} channel {} has error when flush data. the data server maybe lost.", taskId, channelId);
