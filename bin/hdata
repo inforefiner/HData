@@ -2,12 +2,15 @@
 
 if [ -z "$HDATA_HOME" ]
 then
-  HDATA_HOME=`pwd`
+  HDATA_HOME=`cd $(dirname $0)/..; pwd`
 fi
 
 HDATA_LIB_DIR=$HDATA_HOME/lib
 HDATA_CONF_DIR=$HDATA_HOME/conf
 HDATA_PLUGINS_DIR=$HDATA_HOME/plugins
+LOGGERSERVER_LOGS_DIR=$HDATA_HOME/logs
+LOGGERSERVER_NAME=hdata_logs.log
+
 
 if [ -x "$JAVA_HOME/bin/java" ]; then
     JAVA="$JAVA_HOME/bin/java"
@@ -46,7 +49,7 @@ JAVA_OPTS="$JAVA_OPTS -XX:SoftRefLRUPolicyMSPerMB=0"
 JAVA_OPTS="$JAVA_OPTS -Djava.security.egd=file:/dev/./urandom"
 JAVA_OPTS="$JAVA_OPTS -Dhdata.plugins.path=$HDATA_PLUGINS_DIR"
 JAVA_OPTS="$JAVA_OPTS -Dhdata.conf.dir=$HDATA_CONF_DIR"
-#JAVA_OPTS="$JAVA_OPTS -Dlog4j.configurationFile=file:///$HDATA_CONF_DIR/logback.xml"
+JAVA_OPTS="$JAVA_OPTS -Dlog4j.configurationFile=file:///$HDATA_CONF_DIR/logback.xml"
 
 MAIN_CLASS="com.github.stuxuhai.hdata.CliDriver"
 
