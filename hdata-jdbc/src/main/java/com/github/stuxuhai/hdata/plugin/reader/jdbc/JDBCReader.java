@@ -214,6 +214,11 @@ public class JDBCReader extends Reader {
                 logger.info("execute select sql =  {} , rows = {}, use time = {}", sql, rows, cost);
             }
         } catch (Throwable e) {
+            if (e instanceof SQLException) {
+                logger.error("sql error with error code {}", ((SQLException) e).getErrorCode(), e);
+            } else {
+                logger.error("execute sql error", e);
+            }
             throw e;
         } finally {
             try {

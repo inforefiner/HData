@@ -6,6 +6,7 @@ import com.github.stuxuhai.hdata.core.DefaultRecord;
 import com.github.stuxuhai.hdata.plugin.reader.http.client.GetClient;
 import com.github.stuxuhai.hdata.plugin.reader.http.client.JsonBuilder;
 import com.github.stuxuhai.hdata.plugin.reader.http.client.PostClient;
+import com.github.stuxuhai.hdata.plugin.reader.http.utils.HttpUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,15 +22,22 @@ public class HttpReader extends Reader {
     private String parameters = null;
     private String[] fields = null;
     private String rootPath = null;
+    private HttpUtils httpUtils = HttpUtils.getInstance();
 
     @Override
     public void prepare(JobContext context, PluginConfig readerConfig) {
-        urlstr = readerConfig.getString(HttpReaderProperties.URL);
+        if(readerConfig.getString(HttpReaderProperties.METHOD).equals("GET")){
+            urlstr = httpUtils.discernUrl(readerConfig.getString(HttpReaderProperties.URL));
+        }else{
+            urlstr =  readerConfig.getString(HttpReaderProperties.URL);
+        }
         method = readerConfig.getString(HttpReaderProperties.METHOD, "GET");
         parameters = readerConfig.getString(HttpReaderProperties.PARAMETERS);
         encoding = readerConfig.getString(HttpReaderProperties.ENCODING, "UTF-8");
         fields = readerConfig.getString(HttpReaderProperties.FIELDS).split(",");
         rootPath = readerConfig.getString(HttpReaderProperties.ROOT_PATH);
+        LOG.info("oldurl : {} newurl：{} method:{} parameters:{} encoding:{} fields:{} rootPath：{} "
+                ,readerConfig.getString(HttpReaderProperties.URL),urlstr,method,parameters,encoding,fields,rootPath);
     }
 
     @Override

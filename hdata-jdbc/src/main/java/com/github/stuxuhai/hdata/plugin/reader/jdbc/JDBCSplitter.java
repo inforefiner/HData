@@ -75,7 +75,8 @@ public class JDBCSplitter extends Splitter {
                 cursorVal = cursorVal.substring(0, 19);
             }
             if (JdbcUtils.isOracle(driver)) {
-                where.append("TO_DATE('" + cursorVal + "','yyyy-mm-dd hh24:mi:ss')");
+                where.append("TO_DATE('" + cursorVal + "','yyyy-mm-dd HH:MI:SS AM','NLS_DATE_LANGUAGE = American')");
+
             } else if (JdbcUtils.isSqlServer(driver)) {
                 where.append("DATEADD(SECOND, 1, '" + cursorVal + "')");
             } else {
@@ -84,6 +85,7 @@ public class JDBCSplitter extends Splitter {
         } else {
             where.append(cursorVal);
         }
+        logger.info("cursor value where: {}" ,where);
     }
 
     @Override
@@ -148,7 +150,8 @@ public class JDBCSplitter extends Splitter {
             }
 
             String splitKey = JdbcUtils.getSplitKey(conn, catalog, schema, table);
-            logger.info("Not found split key in table {}", table);
+            logger.info("Not found split key in table {} splitKey : {}", table ,splitKey);
+            logger.info("sql merge 1 : {}" ,sql.toString());
 
             if (JdbcUtils.isDB2(driver)) {
                 sql.append(", ROW_NUMBER() OVER() AS RN");
@@ -162,7 +165,7 @@ public class JDBCSplitter extends Splitter {
 
             sql.append(" FROM ");
             sql.append(keywordEscaper).append(table).append(keywordEscaper);
-
+            logger.info("sql merge 2 : {}" ,sql.toString());
             sql.append(" WHERE ");
             sql.append(CONDITIONS);
 
@@ -172,8 +175,10 @@ public class JDBCSplitter extends Splitter {
                 sql.append(where);
             }
 
+            logger.info("sql merge 3 : {}" ,sql.toString());
             String sqlExpr = sql.toString();
 
+            //增量查询
             if (StringUtils.isNotBlank(cursorColumn)) {
                 if (StringUtils.isNotBlank(cursorValue)) {
                     sql.append(" AND ");
@@ -181,6 +186,8 @@ public class JDBCSplitter extends Splitter {
                     sql.append(" > ");
                     getCursorValue(driver, cursorType, cursorValue, sql);
                 }
+
+                //增量字段最大值
                 String newCursorValue = JdbcUtils.getMaxValue(conn, sqlExpr.replace(CONDITIONS, "(1 = 1)"), cursorColumn);
                 if (newCursorValue != null && !newCursorValue.equals(cursorValue)) {
                     sql.append(" AND ");
@@ -191,6 +198,7 @@ public class JDBCSplitter extends Splitter {
                 }
             }
 
+            logger.info("sql merge 4 : {} CONDITIONS ：{}" ,sql.toString(),CONDITIONS);
             sqlList.add(sql.toString());
 
             if (parallelism > 1 || maxFetchSize > 0) {
@@ -203,7 +211,7 @@ public class JDBCSplitter extends Splitter {
             }
 
             readerConfig.put(JDBCReaderProperties.SQL, sqlList);
-
+            logger.info("split sqlList : {}" , sqlList);
         } catch (Throwable e) {
             throw new HDataException(e);
         } finally {
@@ -211,6 +219,7 @@ public class JDBCSplitter extends Splitter {
         }
         List<PluginConfig> readerConfigList = new ArrayList<PluginConfig>();
         readerConfigList.add(readerConfig);
+        logger.info("readerConfigList : {}" ,readerConfigList);
         return readerConfigList;
     }
 

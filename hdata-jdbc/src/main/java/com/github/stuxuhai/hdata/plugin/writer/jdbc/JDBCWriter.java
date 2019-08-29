@@ -53,6 +53,7 @@ public class JDBCWriter extends Writer {
 
         this.table = table;
         batchInsertSize = writerConfig.getInt(JDBCWriterProperties.BATCH_INSERT_SIZE, DEFAULT_BATCH_INSERT_SIZE);
+        logger.info("Writer url:{} username:{} password:{} table:{} batchInsertSize:{} keywordEscaper:{} driver:{} columns:{}",url,username,password,table,batchInsertSize,keywordEscaper,driver,columns);
         if (batchInsertSize < 1) {
             batchInsertSize = DEFAULT_BATCH_INSERT_SIZE;
         }
@@ -69,7 +70,7 @@ public class JDBCWriter extends Writer {
                 sql = String.format("INSERT INTO %s(%s) VALUES(%s)",
                         new Object[] { table, keywordEscaper + Joiner.on(keywordEscaper + ", " + keywordEscaper).join(this.schema) + keywordEscaper,
                                 Joiner.on(", ").join(placeholder) });
-                logger.debug(sql);
+                logger.info("schema sql :{} placeholder:{}", sql,placeholder);
                 this.statement = this.connection.prepareStatement(sql);
             } else if (this.columns != null) {
                 String[] placeholder = new String[this.columns.size()];
@@ -77,7 +78,7 @@ public class JDBCWriter extends Writer {
                 sql = String.format("INSERT INTO %s(%s) VALUES(%s)",
                         new Object[] { table, keywordEscaper + Joiner.on(keywordEscaper + ", " + keywordEscaper).join(this.columns) + keywordEscaper,
                                 Joiner.on(", ").join(placeholder) });
-                logger.debug(sql);
+                logger.info("prepare sql:{}" , sql);
                 this.statement = this.connection.prepareStatement(sql);
             }
         } catch (Exception e) {
@@ -92,6 +93,7 @@ public class JDBCWriter extends Writer {
                 String[] placeholder = new String[record.size()];
                 Arrays.fill(placeholder, "?");
                 String sql = String.format("INSERT INTO %s VALUES(%s)", table, Joiner.on(", ").join(placeholder));
+                logger.info("writerExecute sql : {} placeholder ：",sql ,placeholder);
                 logger.debug(sql);
                 statement = connection.prepareStatement(sql);
             }
