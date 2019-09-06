@@ -48,6 +48,14 @@
             <artifactId>kryo-shaded</artifactId>
             <version>4.0.2</version>
         </dependency>
+
+        <!-- https://mvnrepository.com/artifact/net.openhft/chronicle-queue -->
+        <dependency>
+            <groupId>net.openhft</groupId>
+            <artifactId>chronicle-queue</artifactId>
+            <version>5.17.21</version>
+        </dependency>
+
         <dependency>
             <groupId>net.jpountz.lz4</groupId>
             <artifactId>lz4</artifactId>

@@ -8,18 +8,28 @@ import com.github.stuxuhai.hdata.api.Configuration;
 import com.github.stuxuhai.hdata.api.JobContext;
 import com.github.stuxuhai.hdata.api.Record;
 import com.merce.woven.data.rpc.DataService;
+import net.openhft.chronicle.queue.ChronicleQueue;
+import net.openhft.chronicle.queue.ExcerptAppender;
+import net.openhft.chronicle.queue.ExcerptTailer;
+import net.openhft.chronicle.queue.RollCycles;
+import net.openhft.chronicle.queue.impl.StoreFileListener;
+import net.openhft.chronicle.wire.DocumentContext;
+import net.openhft.chronicle.wire.Wire;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class DataRpcService implements RpcCallable {
 
     private final Logger logger = LoggerFactory.getLogger(DataRpcService.class);
+
+    private static final String SIZE_KEY = "L";
 
     private static int DEFAULT_BUFFER_SIZE = 5000;
     private static long MAX_FLUSH_PADDING_TIME = 1000 * 30;
@@ -36,11 +46,16 @@ public class DataRpcService implements RpcCallable {
 
     private volatile boolean isClosed = false;
 
-    private volatile boolean hasError = false;
+    private volatile long lastFlushTime = 0L;
 
-    private volatile long lastFlushTime = 0l;
+    // chronicle queue settings
+    private Path queueDir;
+    private ChronicleQueue eventQueue;
+    private ExcerptTailer tailer;
 
-    private BlockingQueue<Object[]> bufferQueue;
+    // pointer for read/write offset in event queue
+    private AtomicInteger readPointer = new AtomicInteger(0);
+    private AtomicInteger writePointer = new AtomicInteger(0);
 
     @Override
     public void setup(String tenantId, String taskId, Configuration configuration) {
@@ -56,6 +71,43 @@ public class DataRpcService implements RpcCallable {
 
         bufferSize = configuration.getInt("buffer.size", DEFAULT_BUFFER_SIZE);
         flushPaddingTime = configuration.getLong("flush.padding.time", MAX_FLUSH_PADDING_TIME);
+
+        try {
+            this.queueDir = Files.createTempDirectory("hdata-dubbo-data-writer-queue" + taskId + System.currentTimeMillis());
+            this.queueDir.toFile().deleteOnExit();
+        } catch (IOException e) {
+            throw new RuntimeException("data service prepare error", e);
+        }
+
+
+        eventQueue = ChronicleQueue.singleBuilder(this.queueDir).rollCycle(RollCycles.HOURLY).storeFileListener(new StoreFileListener() {
+            @Override
+            public void onAcquired(int cycle, File file) {
+                logger.info("{} onAcquired {}", queueDir, file.getAbsolutePath());
+            }
+
+            @Override
+            public void onReleased(int cycle, File file) {
+                logger.info("{} onReleased {}", queueDir, file.getAbsolutePath());
+                long lastModified = file.lastModified();
+                File parent = file.getParentFile();
+                File[] files = parent.listFiles();
+                if(files != null) {
+                    for (File f : files) {
+                        if (f.isFile() && f.lastModified() < lastModified) {
+                            if (f.delete()) {
+                                logger.info("{} deleted {}", queueDir, file.getAbsolutePath());
+                            } else {
+                                logger.info("{} delete {} failed", queueDir, file.getAbsolutePath());
+                            }
+                        }
+                    }
+                }
+            }
+        }).build();
+
+        this.tailer = eventQueue.createTailer();
+        tailer.toStart();
     }
 
     @Override
@@ -64,7 +116,6 @@ public class DataRpcService implements RpcCallable {
         this.taskId = taskId;
         this.channelId = channelId;
         this.jobContext = jobContext;
-        this.bufferQueue = new ArrayBlockingQueue(bufferSize, true);
         Thread t = new Thread(new DataSender());
         t.setDaemon(true);
         t.start();
@@ -72,10 +123,20 @@ public class DataRpcService implements RpcCallable {
 
     @Override
     public void execute(Record record) {
-        try {
-            bufferQueue.put(record.strings());
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+        final ExcerptAppender appender = eventQueue.acquireAppender();
+        try (final DocumentContext dc = appender.writingDocument()) {
+            String[] values = record.strings();
+            Wire wire = dc.wire();
+            int length = values.length;
+            wire.write(SIZE_KEY).int32(length);
+            for (String value : values) {
+                wire.write().text(value);
+            }
+            int wrote = writePointer.incrementAndGet();
+            logger.debug("enqueue {} records", wrote);
+        } catch (Exception e) {
+            logger.error("enqueue {} error", queueDir, e);
+            throw new RuntimeException(queueDir + " store event error", e);
         }
     }
 
@@ -83,9 +144,19 @@ public class DataRpcService implements RpcCallable {
     public void close(long total, boolean isLast) {
         isClosed = true;
         if (dataService != null) {
-            if (bufferQueue != null && bufferQueue.size() > 0) {
-                flushData();
+            if (eventQueue != null && !eventQueue.isClosed()) {
+                int toRead = writePointer.get() - readPointer.get();
+                if (toRead > 0) {
+                    flushData();
+                }
+
+                try {
+                    eventQueue.close();
+                } catch (Exception e) {
+                    logger.error("close {} error {}", queueDir, e);
+                }
             }
+
             if (jobContext.isReaderError() || jobContext.isWriterError()) {
                 dataService.onError(tenantId, taskId, channelId, new RuntimeException("reader or writer has error !"));
             } else {
@@ -98,7 +169,7 @@ public class DataRpcService implements RpcCallable {
         @Override
         public void run() {
             while (!isClosed) {
-                if (bufferQueue.remainingCapacity() == 0 || (!bufferQueue.isEmpty() && (System.currentTimeMillis() - lastFlushTime) > flushPaddingTime)) {
+                if ((writePointer.get() - readPointer.get()) > bufferSize || (System.currentTimeMillis() - lastFlushTime) > flushPaddingTime) {
                     try {
                         flushData();
                     } catch (Throwable e) {
@@ -119,8 +190,33 @@ public class DataRpcService implements RpcCallable {
     private synchronized int flushData() {
         lastFlushTime = System.currentTimeMillis();
         long l = System.currentTimeMillis();
-        ArrayList list = new ArrayList();
-        bufferQueue.drainTo(list);
+        ArrayList<String[]> list = new ArrayList<>();
+        while (list.size() < bufferSize) {
+            try (DocumentContext dc = tailer.readingDocument()) {
+                if (dc.isPresent()) {
+                    Wire wire = dc.wire();
+                    int size = wire.read(SIZE_KEY).int32();
+                    String[] values = new String[size];
+                    for (int j = 0; j < size; j++) {
+                        values[j] = wire.read().text();
+                    }
+                    list.add(values);
+                    int read = readPointer.incrementAndGet();
+                    logger.debug("dequeue {} records", read);
+                } else {
+                    break;
+                }
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                logger.error("read {} failed", queueDir, e);
+                if (e.getMessage().startsWith("Queue is closed")) {
+                    logger.info("exit queue read loop!");
+                    break;
+                }
+            }
+        }
+
         int ret = 0;
         if (list.size() > 0) {
             byte[] bytes = KryoUtils.writeToByteBuffer(list);
@@ -138,7 +234,7 @@ public class DataRpcService implements RpcCallable {
         return ret;
     }
 
-    public DataService connectWriterServer(Configuration writerConfig) {
+    private DataService connectWriterServer(Configuration writerConfig) {
         if (dataService == null) {
             synchronized (DataService.class) {
                 if (dataService == null) {
@@ -161,7 +257,7 @@ public class DataRpcService implements RpcCallable {
                         e.printStackTrace();
                     }
 
-                    ReferenceConfig<DataService> reference = new ReferenceConfig<DataService>();
+                    ReferenceConfig<DataService> reference = new ReferenceConfig<>();
                     reference.setApplication(application);
                     reference.setRegistry(registry); // 多个注册中心可以用setRegistries()
                     reference.setInterface(DataService.class);
