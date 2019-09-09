@@ -10,6 +10,7 @@ import com.codahale.metrics.Slf4jReporter;
 import com.github.stuxuhai.hdata.api.Configuration;
 import com.github.stuxuhai.hdata.api.JobContext;
 import com.github.stuxuhai.hdata.api.Record;
+import com.google.common.base.Preconditions;
 import com.merce.woven.data.rpc.DataService;
 import net.openhft.chronicle.queue.ChronicleQueue;
 import net.openhft.chronicle.queue.ExcerptAppender;
@@ -68,12 +69,8 @@ public class DataRpcService implements RpcCallable {
     @Override
     public void setup(String tenantId, String taskId, Configuration configuration) {
 
-        final Slf4jReporter reporter = Slf4jReporter.forRegistry(metrics)
-                .outputTo(LoggerFactory.getLogger("com.github.stuxuhai.hdata.plugin.dubbo.writer.DataRpcService"))
-                .convertRatesTo(TimeUnit.SECONDS)
-                .convertDurationsTo(TimeUnit.MILLISECONDS)
-                .build();
-        reporter.start(10, TimeUnit.SECONDS);
+        bufferSize = configuration.getInt("buffer.size", DEFAULT_BUFFER_SIZE);
+        flushPaddingTime = configuration.getLong("flush.padding.time", MAX_FLUSH_PADDING_TIME);
 
         dataService = connectWriterServer(configuration);
         if (dataService == null) {
@@ -84,9 +81,20 @@ public class DataRpcService implements RpcCallable {
         } catch (Throwable e) {
             throw new RuntimeException("data service prepare error", e);
         }
+    }
 
-        bufferSize = configuration.getInt("buffer.size", DEFAULT_BUFFER_SIZE);
-        flushPaddingTime = configuration.getLong("flush.padding.time", MAX_FLUSH_PADDING_TIME);
+    @Override
+    public void prepare(String tenantId, String taskId, String channelId, JobContext jobContext) {
+        this.tenantId = tenantId;
+        this.taskId = taskId;
+        this.channelId = channelId;
+        this.jobContext = jobContext;
+        final Slf4jReporter reporter = Slf4jReporter.forRegistry(metrics)
+                .outputTo(LoggerFactory.getLogger("com.github.stuxuhai.hdata.plugin.dubbo.writer.DataRpcService"))
+                .convertRatesTo(TimeUnit.SECONDS)
+                .convertDurationsTo(TimeUnit.MILLISECONDS)
+                .build();
+        reporter.start(10, TimeUnit.SECONDS);
 
         try {
             this.queueDir = Files.createTempDirectory("hdata-dubbo-data-writer-queue" + taskId + System.currentTimeMillis());
@@ -124,14 +132,7 @@ public class DataRpcService implements RpcCallable {
 
         this.tailer = eventQueue.createTailer();
         tailer.toStart();
-    }
 
-    @Override
-    public void prepare(String tenantId, String taskId, String channelId, JobContext jobContext) {
-        this.tenantId = tenantId;
-        this.taskId = taskId;
-        this.channelId = channelId;
-        this.jobContext = jobContext;
         Thread t = new Thread(new DataSender());
         t.setDaemon(true);
         t.start();
@@ -207,7 +208,8 @@ public class DataRpcService implements RpcCallable {
     private synchronized int flushData() {
         lastFlushTime = System.currentTimeMillis();
         long l = System.currentTimeMillis();
-        ArrayList<String[]> list = new ArrayList<>();
+        ArrayList<String[]> list = new ArrayList<>(bufferSize);
+        Preconditions.checkNotNull(tailer);
         while (list.size() < bufferSize) {
             try (DocumentContext dc = tailer.readingDocument()) {
                 if (dc.isPresent()) {
