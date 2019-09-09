@@ -4,6 +4,9 @@ import com.alibaba.dubbo.config.ApplicationConfig;
 import com.alibaba.dubbo.config.ConsumerConfig;
 import com.alibaba.dubbo.config.ReferenceConfig;
 import com.alibaba.dubbo.config.RegistryConfig;
+import com.codahale.metrics.Meter;
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.Slf4jReporter;
 import com.github.stuxuhai.hdata.api.Configuration;
 import com.github.stuxuhai.hdata.api.JobContext;
 import com.github.stuxuhai.hdata.api.Record;
@@ -23,6 +26,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class DataRpcService implements RpcCallable {
@@ -57,8 +61,20 @@ public class DataRpcService implements RpcCallable {
     private AtomicInteger readPointer = new AtomicInteger(0);
     private AtomicInteger writePointer = new AtomicInteger(0);
 
+    private final MetricRegistry metrics = new MetricRegistry();
+    private final Meter dubboReceive = metrics.meter("dubboReceive");
+    private final Meter dubboWrite = metrics.meter("dubboWrite");
+
     @Override
     public void setup(String tenantId, String taskId, Configuration configuration) {
+
+        final Slf4jReporter reporter = Slf4jReporter.forRegistry(metrics)
+                .outputTo(LoggerFactory.getLogger("com.github.stuxuhai.hdata.plugin.dubbo.writer.DataRpcService"))
+                .convertRatesTo(TimeUnit.SECONDS)
+                .convertDurationsTo(TimeUnit.MILLISECONDS)
+                .build();
+        reporter.start(10, TimeUnit.SECONDS);
+
         dataService = connectWriterServer(configuration);
         if (dataService == null) {
             throw new RuntimeException("target server out of service ! ");
@@ -133,6 +149,7 @@ public class DataRpcService implements RpcCallable {
                 wire.write().text(value);
             }
             int wrote = writePointer.incrementAndGet();
+            dubboReceive.mark();
             logger.debug("enqueue {} records", wrote);
         } catch (Exception e) {
             logger.error("enqueue {} error", queueDir, e);
@@ -218,17 +235,19 @@ public class DataRpcService implements RpcCallable {
         }
 
         int ret = 0;
-        if (list.size() > 0) {
+        int toSendCount = list.size();
+        if (toSendCount > 0) {
             byte[] bytes = KryoUtils.writeToByteBuffer(list);
             logger.info("flushData() serialize {} bytes", bytes.length);
             int length = bytes.length;
-            ret = dataService.execute(tenantId, taskId, channelId, bytes, length, list.size());
+            ret = dataService.execute(tenantId, taskId, channelId, bytes, length, toSendCount);
+            dubboWrite.mark(toSendCount);
             if (ret == -1) {
                 jobContext.setWriterError(true);
                 logger.error("task {} channel {} has error when flush data. the data server maybe lost.", taskId, channelId);
             } else {
                 logger.debug("task {} channel {} has flush {} records, size is {}, use time {} ms", taskId, channelId,
-                        list.size(), length, System.currentTimeMillis() - l);
+                        toSendCount, length, System.currentTimeMillis() - l);
             }
         }
         return ret;
