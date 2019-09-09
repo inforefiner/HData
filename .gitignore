@@ -3,3 +3,7 @@
 **/*.iml
 .idea/**
 .DS_Store
+**/.project
+**/.classpath
+**/.settings
+**/.vscode
