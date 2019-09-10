@@ -11,6 +11,7 @@ import com.github.stuxuhai.hdata.api.Configuration;
 import com.github.stuxuhai.hdata.api.JobContext;
 import com.github.stuxuhai.hdata.api.Record;
 import com.google.common.base.Preconditions;
+import com.inforefiner.hdata.reporter.DubboReporter;
 import com.merce.woven.data.rpc.DataService;
 import net.openhft.chronicle.queue.ChronicleQueue;
 import net.openhft.chronicle.queue.ExcerptAppender;
@@ -96,6 +97,16 @@ public class DataRpcService implements RpcCallable {
                 .build();
         reporter.start(10, TimeUnit.SECONDS);
 
+        final DubboReporter dubboReporter = DubboReporter.forRegistry(metrics)
+                .outputTo(dataService)
+                .withTenantId(tenantId)
+                .withTaskId(taskId)
+                .withChannelId(channelId)
+                .convertRatesTo(TimeUnit.SECONDS)
+                .convertDurationsTo(TimeUnit.MILLISECONDS)
+                .build();
+        dubboReporter.start(10, TimeUnit.SECONDS);
+
         try {
             this.queueDir = Files.createTempDirectory("hdata-dubbo-data-writer-queue" + taskId + System.currentTimeMillis());
             this.queueDir.toFile().deleteOnExit();
@@ -116,7 +127,7 @@ public class DataRpcService implements RpcCallable {
                 long lastModified = file.lastModified();
                 File parent = file.getParentFile();
                 File[] files = parent.listFiles();
-                if(files != null) {
+                if (files != null) {
                     for (File f : files) {
                         if (f.isFile() && f.lastModified() < lastModified) {
                             if (f.delete()) {
