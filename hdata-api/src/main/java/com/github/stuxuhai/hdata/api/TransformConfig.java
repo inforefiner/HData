@@ -9,6 +9,10 @@ import java.util.Map;
  */
 public class TransformConfig extends Configuration {
 
+    /**
+     * 存储encryptKey
+     */
+    public String encryptKey;
 
     public TransformConfig() {
         super();

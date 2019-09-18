@@ -29,6 +29,9 @@ public class CliDriver {
     private static final String READER_VARS_OPTION = "R";
     private static final String WRITER_VARS_OPTION = "W";
     private static final String TRANSFORMER_VARS_OPTION = "T";
+    private static final String ENCRYPT_KEY ="encryptKey";
+    private static final String ENCRYPT_COLUMNS="encryptColumns";
+    private static final String CHECKSUM_COLUMN = "checksumColumn";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CliDriver.class);
 
@@ -50,6 +53,10 @@ public class CliDriver {
         options.addOption(Option.builder(WRITER_VARS_OPTION).hasArgs().build());
 
         options.addOption(Option.builder(TRANSFORMER_VARS_OPTION).hasArgs().build());
+
+        options.addOption(null, ENCRYPT_KEY, true,"encrypt key string");
+        options.addOption(null, ENCRYPT_COLUMNS, true, "encrypt columns string");
+        options.addOption(null, CHECKSUM_COLUMN, true, "checksum column string");
         return options;
     }
 
@@ -96,10 +103,6 @@ public class CliDriver {
                 String value = str.substring(idx + 1);
                 props.put(key, value);
             }
-//            for (int i = 0, i < values.length; i++) {
-//                String str = values[i];
-//                props.put(values[i], values[++i]);
-//            }
         }
     }
 
@@ -133,6 +136,7 @@ public class CliDriver {
         }
 
         CommandLineParser parser = new DefaultParser();
+
         CommandLine cmd = null;
         try {
             cmd = parser.parse(options, args);
@@ -167,8 +171,11 @@ public class CliDriver {
 
                 TransformConfig transformConfig = new TransformConfig();
                 cliDriver.putOptionValues(transformConfig, cmd.getOptionValues(TRANSFORMER_VARS_OPTION));
+                //加密秘钥放入transformConfig
+                transformConfig.encryptKey = cmd.getOptionValue(ENCRYPT_KEY);
 
                 jobConfig = new DefaultJobConfig(readerName, readerConfig, writerName, writerConfig, transformConfig);
+                LOGGER.info("init job config finished");
             }
 
             String name = ManagementFactory.getRuntimeMXBean().getName();

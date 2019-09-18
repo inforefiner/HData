@@ -108,7 +108,7 @@ public class HData {
 
         LOGGER.info("Transfer data from reader to writer...");
 
-        DefaultRecordCollector rc = new DefaultRecordCollector(storage, metric, readerConfig.getFlowLimit(), transformConfig.getUdfMap());
+        DefaultRecordCollector rc = new DefaultRecordCollector(storage, metric, readerConfig.getFlowLimit(), transformConfig.getUdfMap(), transformConfig.encryptKey);
         ExecutorService es = Executors.newFixedThreadPool(readers.length);
         CompletionService<Integer> cs = new ExecutorCompletionService<Integer>(es);
         for (int i = 0, len = readerConfigList.size(); i < len; i++) {

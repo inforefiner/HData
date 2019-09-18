@@ -105,21 +105,19 @@ public class JDBCReader extends Reader {
 
     @Override
     public void execute(RecordCollector recordCollector) {
-        Statement statement = null;
         int total = 0;
         try {
-            statement = getStatement();
             if (sqlPiece != null) {
                 while (true) {
                     String sql = sqlPiece.getNextSQL(sequence);
                     if (sql == null) {
                         break;
                     }
-                    total += executeSingle(statement, sql, recordCollector);
+                    total += executeSingle(sql, recordCollector);
                 }
             } else if (sqlList != null && sqlList.size() > 0) {
                 for (String sql : sqlList) {
-                    total += executeSingle(statement, sql, recordCollector);
+                    total += executeSingle(sql, recordCollector);
                 }
             } else {
                 throw new HDataException("sql 分片 为空");
@@ -127,26 +125,19 @@ public class JDBCReader extends Reader {
         } catch (Throwable e) {
             logger.error("JdbcReader execute error", e);
             throw new HDataException(e);
-        } finally {
-            if (statement != null) {
-                try {
-                    statement.close();
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-            }
         }
         logger.info("reader execute done, total reads =  {} ", total);
     }
 
-    private int executeSingle(Statement statement, String sql, RecordCollector recordCollector) throws Throwable {
+    private int executeSingle(String sql, RecordCollector recordCollector) throws Throwable {
         int rows = 0;
         long startTime = System.currentTimeMillis();
+        Statement statement = getStatement();
         ResultSet rs = null;
         try {
-            logger.debug("execute query sql =  {} ", sql);
+            logger.info("execute query sql =  {} ", sql);
             rs = statement.executeQuery(sql);
-            logger.debug("execute query sql = {} done, fetch size = {}", sql, rs.getFetchSize());
+            logger.info("execute query sql = {} done, fetch size = {}", sql, rs.getFetchSize());
         } catch (Throwable e) {
             logger.error("execute query error", e);
             throw e;
@@ -227,6 +218,13 @@ public class JDBCReader extends Reader {
                 }
             } catch (SQLException e) {
                 e.printStackTrace();
+            }
+            if (statement != null) {
+                try {
+                    statement.close();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
             }
         }
         return rows;
