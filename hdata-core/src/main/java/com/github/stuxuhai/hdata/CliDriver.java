@@ -29,6 +29,9 @@ public class CliDriver {
     private static final String READER_VARS_OPTION = "R";
     private static final String WRITER_VARS_OPTION = "W";
     private static final String TRANSFORMER_VARS_OPTION = "T";
+    private static final String ENCRYPT_KEY ="encryptKey";
+    private static final String ENCRYPT_COLUMNS="encryptColumns";
+    private static final String CHECKSUM_COLUMN = "checksumColumn";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CliDriver.class);
 
@@ -50,6 +53,10 @@ public class CliDriver {
         options.addOption(Option.builder(WRITER_VARS_OPTION).hasArgs().build());
 
         options.addOption(Option.builder(TRANSFORMER_VARS_OPTION).hasArgs().build());
+
+        options.addOption(null, ENCRYPT_KEY, true,"encrypt key string");
+        options.addOption(null, ENCRYPT_COLUMNS, true, "encrypt columns string");
+        options.addOption(null, CHECKSUM_COLUMN, true, "checksum column string");
         return options;
     }
 
@@ -127,15 +134,20 @@ public class CliDriver {
 
         CliDriver cliDriver = new CliDriver();
         Options options = cliDriver.createOptions();
+        LOGGER.info("create options");
         if (args.length < 1) {
             cliDriver.printHelp(options);
             System.exit(-1);
         }
+        LOGGER.info("create options successfully");
 
         CommandLineParser parser = new DefaultParser();
+
         CommandLine cmd = null;
         try {
+            LOGGER.info("parse cmd");
             cmd = parser.parse(options, args);
+            LOGGER.info("parse cmd successfully");
             if (cmd.hasOption(QUIET_OPTION)) {
             }
 
@@ -168,7 +180,17 @@ public class CliDriver {
                 TransformConfig transformConfig = new TransformConfig();
                 cliDriver.putOptionValues(transformConfig, cmd.getOptionValues(TRANSFORMER_VARS_OPTION));
 
+                LOGGER.info("add encryptKey: " + cmd.getOptionValue(ENCRYPT_KEY));
+                transformConfig.encryptKey = cmd.getOptionValue(ENCRYPT_KEY);
+//                String encryptKey = cmd.getOptionValue(ENCRYPT_KEY);
+//                String encryptColumns = cmd.getOptionValue(ENCRYPT_COLUMNS);
+//                String checksumColumn = cmd.getOptionValue(CHECKSUM_COLUMN);
+//                transformConfig.others.put(ENCRYPT_KEY, encryptKey);//新增
+//                transformConfig.others.put(ENCRYPT_COLUMNS, encryptColumns);//新增
+//                transformConfig.others.put(CHECKSUM_COLUMN, checksumColumn);//新增
+
                 jobConfig = new DefaultJobConfig(readerName, readerConfig, writerName, writerConfig, transformConfig);
+                LOGGER.info("init job config");
             }
 
             String name = ManagementFactory.getRuntimeMXBean().getName();

@@ -9,6 +9,12 @@ import java.util.Map;
  */
 public class TransformConfig extends Configuration {
 
+    /**
+     * 存储encryptKey, encryptColumns, checksumColumn
+     */
+//    public Map<String,String> others = new HashMap<>();
+
+    public String encryptKey;
 
     public TransformConfig() {
         super();

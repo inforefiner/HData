@@ -10,6 +10,7 @@ import com.google.common.base.Stopwatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -25,12 +26,17 @@ public class DefaultRecordCollector implements RecordCollector {
     private Stopwatch stopwatch = Stopwatch.createStarted();
     private Map<Integer, String> udfMap;
     private UDF udfList = new UDF();
+//    private Map<String, String> others;
+    private String encryptKey;
 
-    public DefaultRecordCollector(DefaultStorage storage, Metric metric, long flowLimit, Map<Integer, String> udfMap) {
+    public DefaultRecordCollector(DefaultStorage storage, Metric metric, long flowLimit, Map<Integer, String> udfMap,
+                                  String encryptKey) {
         this.storage = storage;
         this.metric = metric;
         this.flowLimit = flowLimit;
         this.udfMap = udfMap;
+//        this.others = others;
+        this.encryptKey = encryptKey;
         LOGGER.info("The flow limit is {} bytes/s.", this.flowLimit);
     }
 
@@ -73,6 +79,7 @@ public class DefaultRecordCollector implements RecordCollector {
 
     public Record doTransform(Record record) {
         Record _record = new DefaultRecord(record.size());
+        int idx = -1;
         for (int i = 0; i < record.size(); i++) {
             Object obj = record.get(i);
             if (udfMap.containsKey(i)) {
@@ -84,9 +91,20 @@ public class DefaultRecordCollector implements RecordCollector {
                     case "mix":
                         obj = udfList.mix(obj);
                         break;
+                    case "encrypt": //加密
+                        obj = udfList.encrypt(obj, encryptKey);
+                        break;
+                    case "checksum": //校验和
+                        idx = i;     //记录需要做校验和字段的index, 对其他字段全部transform完成后,再计算校验和
+                        break;
                 }
             }
             _record.add(i, obj);
+        }
+        //如果需要,计算校验和
+        if (idx != -1) {
+            Object obj = udfList.checksum(_record.values(), idx);
+            _record.add(idx, obj);
         }
         return _record;
     }
