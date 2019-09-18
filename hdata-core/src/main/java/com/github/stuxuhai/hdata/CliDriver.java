@@ -103,10 +103,6 @@ public class CliDriver {
                 String value = str.substring(idx + 1);
                 props.put(key, value);
             }
-//            for (int i = 0, i < values.length; i++) {
-//                String str = values[i];
-//                props.put(values[i], values[++i]);
-//            }
         }
     }
 
@@ -134,20 +130,16 @@ public class CliDriver {
 
         CliDriver cliDriver = new CliDriver();
         Options options = cliDriver.createOptions();
-        LOGGER.info("create options");
         if (args.length < 1) {
             cliDriver.printHelp(options);
             System.exit(-1);
         }
-        LOGGER.info("create options successfully");
 
         CommandLineParser parser = new DefaultParser();
 
         CommandLine cmd = null;
         try {
-            LOGGER.info("parse cmd");
             cmd = parser.parse(options, args);
-            LOGGER.info("parse cmd successfully");
             if (cmd.hasOption(QUIET_OPTION)) {
             }
 
@@ -179,18 +171,11 @@ public class CliDriver {
 
                 TransformConfig transformConfig = new TransformConfig();
                 cliDriver.putOptionValues(transformConfig, cmd.getOptionValues(TRANSFORMER_VARS_OPTION));
-
-                LOGGER.info("add encryptKey: " + cmd.getOptionValue(ENCRYPT_KEY));
+                //加密秘钥放入transformConfig
                 transformConfig.encryptKey = cmd.getOptionValue(ENCRYPT_KEY);
-//                String encryptKey = cmd.getOptionValue(ENCRYPT_KEY);
-//                String encryptColumns = cmd.getOptionValue(ENCRYPT_COLUMNS);
-//                String checksumColumn = cmd.getOptionValue(CHECKSUM_COLUMN);
-//                transformConfig.others.put(ENCRYPT_KEY, encryptKey);//新增
-//                transformConfig.others.put(ENCRYPT_COLUMNS, encryptColumns);//新增
-//                transformConfig.others.put(CHECKSUM_COLUMN, checksumColumn);//新增
 
                 jobConfig = new DefaultJobConfig(readerName, readerConfig, writerName, writerConfig, transformConfig);
-                LOGGER.info("init job config");
+                LOGGER.info("init job config finished");
             }
 
             String name = ManagementFactory.getRuntimeMXBean().getName();

@@ -26,7 +26,6 @@ public class DefaultRecordCollector implements RecordCollector {
     private Stopwatch stopwatch = Stopwatch.createStarted();
     private Map<Integer, String> udfMap;
     private UDF udfList = new UDF();
-//    private Map<String, String> others;
     private String encryptKey;
 
     public DefaultRecordCollector(DefaultStorage storage, Metric metric, long flowLimit, Map<Integer, String> udfMap,
@@ -35,7 +34,6 @@ public class DefaultRecordCollector implements RecordCollector {
         this.metric = metric;
         this.flowLimit = flowLimit;
         this.udfMap = udfMap;
-//        this.others = others;
         this.encryptKey = encryptKey;
         LOGGER.info("The flow limit is {} bytes/s.", this.flowLimit);
     }

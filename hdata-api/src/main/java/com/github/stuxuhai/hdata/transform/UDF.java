@@ -74,20 +74,8 @@ public class UDF {
     public static void main(String[] args) {
         double d = 1123.1234234d;
         float f = 2.2234234f;
-//        System.out.println(isNumber(d));
-//        System.out.println(isNumber(f));
-//        System.out.println(isNumber(null));
-        List<Object> l = new ArrayList<>();
-        l.add(d);
-        l.add(f);
-        l.add("qwe");
-        byte[] data = Arrays.toString(l.toArray()).getBytes();
-        Object[] o = new Object[]{d, f, "qwe"};
-        if (Arrays.equals(o, l.toArray())) {
-            System.out.println("123123");
-        }
-        CRC32 crc = new CRC32();
-        crc.update(data);
-        System.out.println(crc.getValue());
+        System.out.println(isNumber(d));
+        System.out.println(isNumber(f));
+        System.out.println(isNumber(null));
     }
 }
