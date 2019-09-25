@@ -75,7 +75,7 @@ public class JDBCSplitter extends Splitter {
                 cursorVal = cursorVal.substring(0, 19);
             }
             if (JdbcUtils.isOracle(driver)) {
-                where.append("TO_DATE('" + cursorVal + "','yyyy-mm-dd HH:MI:SS AM','NLS_DATE_LANGUAGE = American')");
+                where.append("TO_DATE('" + cursorVal + "','yyyy-mm-dd HH24:MI:SS','NLS_DATE_LANGUAGE = American')");
 
             } else if (JdbcUtils.isSqlServer(driver)) {
                 where.append("DATEADD(SECOND, 1, '" + cursorVal + "')");
