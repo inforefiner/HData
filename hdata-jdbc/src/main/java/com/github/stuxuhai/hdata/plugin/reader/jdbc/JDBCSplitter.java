@@ -35,7 +35,7 @@ public class JDBCSplitter extends Splitter {
     }
 
     private List<PluginConfig> buildPluginConfigs(Connection conn, List<String> sqlList, String splitColumn, PluginConfig readerConfig) throws Throwable {
-        List<PluginConfig> list = new ArrayList<PluginConfig>();
+        List<PluginConfig> list = new ArrayList<>();
         String driver = readerConfig.getString(JDBCReaderProperties.DRIVER);
         String table = readerConfig.getString(JDBCReaderProperties.TABLE);
         String columns = readerConfig.getString(JDBCReaderProperties.COLUMNS);
@@ -73,10 +73,9 @@ public class JDBCSplitter extends Splitter {
         if (this.isDateTimeType(cursorType)) {
             if (cursorVal.length() > 19) {
                 cursorVal = cursorVal.substring(0, 19);
-            }
+                     }
             if (JdbcUtils.isOracle(driver)) {
-                where.append("TO_DATE('" + cursorVal + "','yyyy-mm-dd HH:MI:SS AM','NLS_DATE_LANGUAGE = American')");
-
+                where.append("TO_DATE('" + cursorVal + "','yyyy-mm-dd HH24:MI:SS','NLS_DATE_LANGUAGE = American')");
             } else if (JdbcUtils.isSqlServer(driver)) {
                 where.append("DATEADD(SECOND, 1, '" + cursorVal + "')");
             } else {
@@ -156,7 +155,7 @@ public class JDBCSplitter extends Splitter {
             if (JdbcUtils.isDB2(driver)) {
                 sql.append(", ROW_NUMBER() OVER() AS RN");
             }
-            //            if (JdbcUtils.isOracle(driver)) {
+//            if (JdbcUtils.isOracle(driver)) {
 //                sql.append(", ROWNUM RN");
 //            }
 //            if (JdbcUtils.isSqlServer(driver)) {
