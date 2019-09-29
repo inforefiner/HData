@@ -104,6 +104,7 @@ public class DefaultRecordCollector implements RecordCollector {
             Object obj = udfList.checksum(_record.values(), idx);
             _record.add(idx, obj);
         }
+//        LOGGER.info("record is : " + Arrays.toString(_record.values()));
         return _record;
     }
 }

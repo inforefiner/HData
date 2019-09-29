@@ -54,6 +54,10 @@
 			<name>es5.6</name>
 			<class>com.github.stuxuhai.hdata.plugin.reader.es5_6.EsReader</class>
 		</reader>
+		<reader>
+			<name>spooldir</name>
+			<class>com.inforefiner.hdata.plugin.reader.spooldir.SpoolDirReader</class>
+		</reader>
 	</readers>
 
 	<writers>
