@@ -58,12 +58,14 @@ public class SpoolDirReader extends Reader {
     public void execute(RecordCollector recordCollector) {
         try {
             handleExisting(recordCollector);
+            logger.info("handle existing data finished");
         } catch (IOException e) {
             logger.error("handle existing data file failed!", e);
             throw new HDataException(e);
         }
         while (!Thread.currentThread().isInterrupted()) {
             try {
+                logger.info("handle watching data");
                 WatchKey key = watchService.poll(1, TimeUnit.MINUTES);
                 if (key != null) {
                     key.pollEvents().stream().forEach(event -> {
@@ -79,10 +81,12 @@ public class SpoolDirReader extends Reader {
                             }
                         }
                     });
+                    key.reset();
                 }
-                key.reset();
             } catch (InterruptedException e) {
                 logger.error("watch service interrupted");
+            } catch (ClosedWatchServiceException e) {
+                logger.error("watch service closed");
             }
         }
     }
@@ -114,7 +118,7 @@ public class SpoolDirReader extends Reader {
         int current = 0;
         String[] nextLine;
         while ((nextLine = reader.readNext()) != null) {
-            if (current > offset) {
+            if (current >= offset) {
                 Record hdataRecord = new DefaultRecord(nextLine.length);
                 for (int i = 0, len = nextLine.length; i < len; i++) {
                     hdataRecord.add(nextLine[i]);

@@ -6,5 +6,5 @@ public class SpoolDirReaderProperties {
 
     static final String PARALLELISM = "parallelism";
 
-    static final String ENCODING = "UTF-8";
+    static final String ENCODING = "encoder";
 }
