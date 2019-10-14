@@ -238,7 +238,6 @@ public class DataRpcService implements RpcCallable {
                 }
 
             } catch (Exception e) {
-                e.printStackTrace();
                 logger.error("read {} failed", queueDir, e);
                 if (e.getMessage().startsWith("Queue is closed")) {
                     logger.info("exit queue read loop!");
