@@ -109,9 +109,9 @@ public class CliDriver {
     private static void HandleArgsByOs(String[] args) {
         if (args != null && SystemUtils.IS_OS_WINDOWS) {
             for (int i = 0; i < args.length; i++) {
-                System.out.println("before = " + args[i]);
+                LOGGER.info("before = " + args[i]);
                 args[i] = args[i].replaceAll("#", "=");
-                System.out.println("after = " + args[i]);
+                LOGGER.info("after = " + args[i]);
             }
         }
     }

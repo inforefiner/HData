@@ -88,10 +88,20 @@ public class JDBCReader extends Reader {
     }
 
     private synchronized Statement getStatement() {
+        boolean isValid = true;
         try {
-            if (connection == null || connection.isClosed()) {
+            com.mysql.jdbc.Connection conn = (com.mysql.jdbc.Connection)connection;
+            conn.ping();
+        } catch (SQLException e) {
+            logger.info("old connection is invalid!");
+            isValid = false;
+        }
+
+        try {
+            if (connection == null || connection.isClosed() || !isValid) {
                 connection = getConnection();
             }
+
             Statement statement = connection.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
             statement.setQueryTimeout(queryTimeout);
             statement.setFetchSize(fetchSize);
