@@ -85,7 +85,7 @@ public class JDBCSplitter extends Splitter {
         } else {
             where.append(cursorVal);
         }
-        logger.info("cursor value where: {}" ,where);
+        logger.info("cursor value where: {}", where);
     }
 
     @Override
@@ -110,7 +110,7 @@ public class JDBCSplitter extends Splitter {
 
         logger.info("splitting cursorColumn = {}, cursorType = {}, cursorValue = {}, parallelism = {}", cursorColumn, cursorType, cursorValue, parallelism);
 
-        List<String> sqlList = new ArrayList<String>();
+        List<String> sqlList = new ArrayList<>();
 
         String table = readerConfig.getString(JDBCReaderProperties.TABLE);
 
@@ -145,13 +145,13 @@ public class JDBCSplitter extends Splitter {
             }
             conn.setCatalog(catalog);
 
-            if(!JdbcUtils.isKingBase(driver)){
+            if (!JdbcUtils.isKingBase(driver)) {
                 conn.setSchema(schema);
             }
 
             String splitKey = JdbcUtils.getSplitKey(conn, catalog, schema, table);
-            logger.info("Not found split key in table {} splitKey : {}", table ,splitKey);
-            logger.info("sql merge 1 : {}" ,sql.toString());
+            logger.info("Not found split key in table {} splitKey : {}", table, splitKey);
+            logger.info("sql merge 1 : {}", sql.toString());
 
             if (JdbcUtils.isDB2(driver)) {
                 sql.append(", ROW_NUMBER() OVER() AS RN");
@@ -165,7 +165,7 @@ public class JDBCSplitter extends Splitter {
 
             sql.append(" FROM ");
             sql.append(keywordEscaper).append(table).append(keywordEscaper);
-            logger.info("sql merge 2 : {}" ,sql.toString());
+            logger.info("sql merge 2 : {}", sql.toString());
             sql.append(" WHERE ");
             sql.append(CONDITIONS);
 
@@ -175,7 +175,7 @@ public class JDBCSplitter extends Splitter {
                 sql.append(where);
             }
 
-            logger.info("sql merge 3 : {}" ,sql.toString());
+            logger.info("sql merge 3 : {}", sql.toString());
             String sqlExpr = sql.toString();
 
             //增量查询
@@ -198,7 +198,7 @@ public class JDBCSplitter extends Splitter {
                 }
             }
 
-            logger.info("sql merge 4 : {} CONDITIONS ：{}" ,sql.toString(),CONDITIONS);
+            logger.info("sql merge 4 : {} CONDITIONS : {}", sql.toString(), CONDITIONS);
             sqlList.add(sql.toString());
 
             if (parallelism > 1 || maxFetchSize > 0) {
@@ -211,15 +211,15 @@ public class JDBCSplitter extends Splitter {
             }
 
             readerConfig.put(JDBCReaderProperties.SQL, sqlList);
-            logger.info("split sqlList : {}" , sqlList);
+            logger.info("split sqlList : {}", sqlList);
         } catch (Throwable e) {
             throw new HDataException(e);
         } finally {
             DbUtils.closeQuietly(conn);
         }
-        List<PluginConfig> readerConfigList = new ArrayList<PluginConfig>();
+        List<PluginConfig> readerConfigList = new ArrayList<>();
         readerConfigList.add(readerConfig);
-        logger.info("readerConfigList : {}" ,readerConfigList);
+        logger.info("readerConfigList : {}", readerConfigList);
         return readerConfigList;
     }
 

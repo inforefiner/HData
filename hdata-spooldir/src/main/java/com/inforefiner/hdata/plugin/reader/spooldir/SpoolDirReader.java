@@ -73,12 +73,7 @@ public class SpoolDirReader extends Reader {
                         Path name = ((WatchEvent<Path>) event).context();
                         Path child = dir.resolve(name);
                         if (event.kind() == ENTRY_CREATE) {
-                            try {
-                                handleSingle(child, 0, recordCollector);
-                            } catch (IOException e) {
-                                logger.error("handle data file error happened", e);
-                                throw new RuntimeException(e);
-                            }
+                            handleSingle(child, 0, recordCollector);
                         }
                     });
                     key.reset();
@@ -113,19 +108,23 @@ public class SpoolDirReader extends Reader {
         });
     }
 
-    private int handleSingle(Path path, int offset, RecordCollector recordCollector) throws IOException {
-        CSVReader reader = new CSVReader(new InputStreamReader(new FileInputStream(path.toFile()), encoding));
+    private int handleSingle(Path path, int offset, RecordCollector recordCollector) {
         int current = 0;
-        String[] nextLine;
-        while ((nextLine = reader.readNext()) != null) {
-            if (current >= offset) {
-                Record hdataRecord = new DefaultRecord(nextLine.length);
-                for (int i = 0, len = nextLine.length; i < len; i++) {
-                    hdataRecord.add(nextLine[i]);
+        try {
+            CSVReader reader = new CSVReader(new InputStreamReader(new FileInputStream(path.toFile()), encoding));
+            String[] nextLine;
+            while ((nextLine = reader.readNext()) != null) {
+                if (current >= offset) {
+                    Record hdataRecord = new DefaultRecord(nextLine.length);
+                    for (int i = 0, len = nextLine.length; i < len; i++) {
+                        hdataRecord.add(nextLine[i]);
+                    }
+                    recordCollector.send(hdataRecord);
                 }
-                recordCollector.send(hdataRecord);
+                current++;
             }
-            current++;
+        } catch (Exception e) {
+            logger.error("read file error: ", e);
         }
         return current;
     }
