@@ -7,6 +7,10 @@
 			<class>com.github.stuxuhai.hdata.plugin.reader.jdbc.JDBCReader</class>
 		</reader>
 		<reader>
+			<name>oracle-9i</name>
+			<class>com.github.stuxuhai.hdata.plugin.reader.oracle9i.JDBCReader</class>
+		</reader>
+		<reader>
 			<name>hive</name>
 			<class>com.github.stuxuhai.hdata.plugin.reader.hive.HiveReader</class>
 		</reader>
