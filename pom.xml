@@ -90,6 +90,7 @@
 		<module>hdata-mongodb</module>
 		<module>hdata-kafka</module>
         <module>hdata-spooldir</module>
+		<module>hdata-oracle-9i</module>
         <!--<module>hdata-cloud</module>-->
         <!--
 
