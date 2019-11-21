@@ -89,7 +89,7 @@ public class JDBCReader extends Reader {
 
     private synchronized Statement getStatement() {
         try {
-            if (connection == null || connection.isClosed() || !connection.isValid(30)) {
+            if (connection == null || connection.isClosed()) {
                 connection = getConnection();
             }
 
