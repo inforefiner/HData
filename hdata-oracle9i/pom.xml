@@ -6,7 +6,7 @@
 		<artifactId>hdata</artifactId>
 		<version>0.2.8</version>
 	</parent>
-	<artifactId>hdata-oracle-9i</artifactId>
+	<artifactId>hdata-oracle9i</artifactId>
 
 	<dependencies>
 		<dependency>
