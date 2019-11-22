@@ -45,7 +45,7 @@ cd $HDATA_BUILD_DIR
 
 for f in $HDATA_HOME/hdata-*; do
     if [ $f != $HDATA_HOME/hdata-api -a $f != $HDATA_HOME/hdata-core ]; then
-       pluginDir=$HDATA_BUILD_HDATA_DIR/plugins/${f#*-}
+       pluginDir=$HDATA_BUILD_HDATA_DIR/plugins/${f##*-}
        mkdir -p $pluginDir
        cp $f/target/hdata-*.jar $pluginDir
        cp $f/target/dependency/*.jar $pluginDir

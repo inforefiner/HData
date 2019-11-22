@@ -7,7 +7,7 @@
 			<class>com.github.stuxuhai.hdata.plugin.reader.jdbc.JDBCReader</class>
 		</reader>
 		<reader>
-			<name>oracle-9i</name>
+			<name>oracle9i</name>
 			<class>com.github.stuxuhai.hdata.plugin.reader.oracle9i.JDBCReader</class>
 		</reader>
 		<reader>
