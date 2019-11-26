@@ -35,7 +35,6 @@ public class JDBCReader extends Reader {
     private String username;
     private String password;
     private String catalog;
-    private String schema;
 
     private int queryTimeout;
     private int fetchSize;
@@ -48,7 +47,6 @@ public class JDBCReader extends Reader {
         username = readerConfig.getString(JDBCReaderProperties.USERNAME);
         password = readerConfig.getString(JDBCReaderProperties.PASSWORD);
         catalog = readerConfig.getString(JDBCReaderProperties.CATALOG);
-        schema = readerConfig.getString(JDBCReaderProperties.SCHEMA);
 
         nullString = readerConfig.getString(JDBCReaderProperties.NULL_STRING);
         nullNonString = readerConfig.getString(JDBCReaderProperties.NULL_NON_STRING);
@@ -76,9 +74,6 @@ public class JDBCReader extends Reader {
             connection.setReadOnly(true);
             if (StringUtils.isNotBlank(catalog)) {
                 connection.setCatalog(catalog);
-            }
-            if (StringUtils.isNotBlank(schema)) {
-                connection.setSchema(schema);
             }
             return connection;
         } catch (Throwable e) {

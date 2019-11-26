@@ -135,9 +135,9 @@ public class JDBCSplitter extends Splitter {
                 conn.setCatalog(catalog);
             }
 
-            if (StringUtils.isNotBlank(schema) && !JdbcUtils.isKingBase(driver)) {
-                conn.setSchema(schema);
-            }
+//            if (StringUtils.isNotBlank(schema) && !JdbcUtils.isKingBase(driver)) {
+//                conn.setSchema(schema);
+//            }
             String splitKey = JdbcUtils.getSplitKey(conn, catalog, schema, table);
             logger.info("Not found split key in table {} splitKey : {}", table, splitKey);
             logger.info("sql merge 1 : {}", sql.toString());
