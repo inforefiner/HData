@@ -1,9 +1,13 @@
 package com.github.stuxuhai.hdata.plugin.dubbo.writer;
 
-import com.alibaba.dubbo.config.ApplicationConfig;
-import com.alibaba.dubbo.config.ConsumerConfig;
-import com.alibaba.dubbo.config.ReferenceConfig;
-import com.alibaba.dubbo.config.RegistryConfig;
+//import com.alibaba.dubbo.config.ApplicationConfig;
+//import com.alibaba.dubbo.config.ConsumerConfig;
+//import com.alibaba.dubbo.config.ReferenceConfig;
+//import com.alibaba.dubbo.config.RegistryConfig;
+import org.apache.dubbo.config.ApplicationConfig;
+import org.apache.dubbo.config.ConsumerConfig;
+import org.apache.dubbo.config.ReferenceConfig;
+import org.apache.dubbo.config.RegistryConfig;
 import com.github.stuxuhai.hdata.api.Configuration;
 import com.github.stuxuhai.hdata.api.JobContext;
 import com.github.stuxuhai.hdata.api.Record;
@@ -74,15 +78,15 @@ public class FileRpcService implements RpcCallable {
                     ApplicationConfig application = new ApplicationConfig();
                     application.setName("hdata-dubbo-file-writer");
                     RegistryConfig registry = new RegistryConfig();
-                    String protocol = writerConfig.getString("protocol");
+                    String protocol = writerConfig.getString("protocol", "consul");
                     registry.setProtocol(protocol);
-                    registry.setClient("curatorx");
+//                    registry.setClient("curatorx");
 
                     registry.setAddress(writerConfig.getString("address"));
-                    registry.setUsername(writerConfig.getString("username"));
-                    registry.setPassword(writerConfig.getString("password"));
+//                    registry.setUsername(writerConfig.getString("username"));
+//                    registry.setPassword(writerConfig.getString("password"));
 
-                    ReferenceConfig<FileService> reference = new ReferenceConfig<FileService>();
+                    ReferenceConfig<FileService> reference = new ReferenceConfig<>();
                     reference.setApplication(application);
                     reference.setRegistry(registry); // 多个注册中心可以用setRegistries()
                     reference.setInterface(FileService.class);

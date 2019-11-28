@@ -1,9 +1,13 @@
 package com.github.stuxuhai.hdata.plugin.dubbo.writer;
 
-import com.alibaba.dubbo.config.ApplicationConfig;
-import com.alibaba.dubbo.config.ConsumerConfig;
-import com.alibaba.dubbo.config.ReferenceConfig;
-import com.alibaba.dubbo.config.RegistryConfig;
+//import com.alibaba.dubbo.config.ApplicationConfig;
+//import com.alibaba.dubbo.config.ConsumerConfig;
+//import com.alibaba.dubbo.config.ReferenceConfig;
+//import com.alibaba.dubbo.config.RegistryConfig;
+import org.apache.dubbo.config.ApplicationConfig;
+import org.apache.dubbo.config.ConsumerConfig;
+import org.apache.dubbo.config.ReferenceConfig;
+import org.apache.dubbo.config.RegistryConfig;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Slf4jReporter;
@@ -272,13 +276,12 @@ public class DataRpcService implements RpcCallable {
                     ApplicationConfig application = new ApplicationConfig();
                     application.setName("hdata-dubbo-data-writer");
                     RegistryConfig registry = new RegistryConfig();
-                    String protocol = writerConfig.getString("protocol", "zookeeper");
+                    String protocol = writerConfig.getString("protocol", "consul");
                     registry.setProtocol(protocol);
-                    registry.setClient("curatorx");
 
                     registry.setAddress(writerConfig.getString("address"));
-                    registry.setUsername(writerConfig.getString("username"));
-                    registry.setPassword(writerConfig.getString("password"));
+//                    registry.setUsername(writerConfig.getString("username"));
+//                    registry.setPassword(writerConfig.getString("password"));
                     try {
                         File file = File.createTempFile("dubbo-" + System.currentTimeMillis(), ".cache");
                         file.deleteOnExit();
