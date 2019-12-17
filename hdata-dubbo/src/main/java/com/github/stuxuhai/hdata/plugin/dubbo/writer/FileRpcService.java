@@ -1,9 +1,5 @@
 package com.github.stuxuhai.hdata.plugin.dubbo.writer;
 
-//import com.alibaba.dubbo.config.ApplicationConfig;
-//import com.alibaba.dubbo.config.ConsumerConfig;
-//import com.alibaba.dubbo.config.ReferenceConfig;
-//import com.alibaba.dubbo.config.RegistryConfig;
 import org.apache.dubbo.config.ApplicationConfig;
 import org.apache.dubbo.config.ConsumerConfig;
 import org.apache.dubbo.config.ReferenceConfig;
@@ -77,14 +73,11 @@ public class FileRpcService implements RpcCallable {
                 if (fileService == null) {
                     ApplicationConfig application = new ApplicationConfig();
                     application.setName("hdata-dubbo-file-writer");
+                    application.setQosEnable(false);
                     RegistryConfig registry = new RegistryConfig();
                     String protocol = writerConfig.getString("protocol", "consul");
                     registry.setProtocol(protocol);
-//                    registry.setClient("curatorx");
-
                     registry.setAddress(writerConfig.getString("address"));
-//                    registry.setUsername(writerConfig.getString("username"));
-//                    registry.setPassword(writerConfig.getString("password"));
 
                     ReferenceConfig<FileService> reference = new ReferenceConfig<>();
                     reference.setApplication(application);

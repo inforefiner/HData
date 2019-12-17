@@ -44,17 +44,23 @@
             <version>2.7.3</version>
         </dependency>
 
-        <dependency>
-            <groupId>com.ecwid.consul</groupId>
-            <artifactId>consul-api</artifactId>
-            <version>1.4.4</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>com.ecwid.consul</groupId>-->
+<!--            <artifactId>consul-api</artifactId>-->
+<!--            <version>1.4.4</version>-->
+<!--        </dependency>-->
 
-        <dependency>
-            <groupId>org.apache.dubbo</groupId>
-            <artifactId>dubbo-registry-consul</artifactId>
-            <version>2.7.3</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.apache.dubbo</groupId>-->
+<!--            <artifactId>dubbo-registry-consul</artifactId>-->
+<!--            <version>2.7.3</version>-->
+<!--            <exclusions>-->
+<!--                <exclusion>-->
+<!--                    <groupId>org.apache.dubbo</groupId>-->
+<!--                    <artifactId>dubbo-common</artifactId>-->
+<!--                </exclusion>-->
+<!--            </exclusions>-->
+<!--        </dependency>-->
 
 
         <dependency>
