@@ -133,7 +133,16 @@ public class FTPReader extends Reader {
                     record.add(file.getModificationTime());
                     recordCollector.send(record);
                 } else if ("http".equalsIgnoreCase(readTo)) {
-                    InputStream is = operator.getInputStream(_filePath);
+                    InputStream is;
+                    try {
+                        is = operator.getInputStream(_filePath);
+                    } catch (Throwable e) {
+                        LOG.error("file " + filePath + " can't get by ftp client.", e);
+                        continue;
+                    }
+                    if (is == null) {
+                        continue;
+                    }
                     File tmpFile = File.createTempFile("tmp_", "");
                     tmpFile.deleteOnExit();
                     FileOutputStream fos = new FileOutputStream(tmpFile);
@@ -150,7 +159,16 @@ public class FTPReader extends Reader {
                         recordCollector.send(record);
                     }
                 } else {
-                    InputStream is = operator.getInputStream(_filePath);
+                    InputStream is;
+                    try {
+                        is = operator.getInputStream(_filePath);
+                    } catch (Throwable e) {
+                        LOG.error("file " + filePath + " can't get by ftp client.", e);
+                        continue;
+                    }
+                    if (is == null) {
+                        continue;
+                    }
                     BufferedReader br = null;
                     if (filePath.endsWith(".gz")) {
                         GZIPInputStream gzin = new GZIPInputStream(is);
