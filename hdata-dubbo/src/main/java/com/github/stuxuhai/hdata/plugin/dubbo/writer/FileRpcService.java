@@ -1,15 +1,23 @@
 package com.github.stuxuhai.hdata.plugin.dubbo.writer;
 
-import org.apache.dubbo.config.ApplicationConfig;
-import org.apache.dubbo.config.ConsumerConfig;
-import org.apache.dubbo.config.ReferenceConfig;
-import org.apache.dubbo.config.RegistryConfig;
+import com.ecwid.consul.v1.ConsulClient;
+import com.ecwid.consul.v1.QueryParams;
+import com.ecwid.consul.v1.Response;
+import com.ecwid.consul.v1.health.HealthServicesRequest;
+import com.ecwid.consul.v1.health.model.HealthService;
+import com.merce.woven.data.rpc.DataService;
+import org.apache.commons.lang.StringUtils;
+import org.apache.dubbo.config.*;
 import com.github.stuxuhai.hdata.api.Configuration;
 import com.github.stuxuhai.hdata.api.JobContext;
 import com.github.stuxuhai.hdata.api.Record;
 import com.merce.woven.data.rpc.FileService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class FileRpcService implements RpcCallable {
 
@@ -85,6 +93,10 @@ public class FileRpcService implements RpcCallable {
                     reference.setInterface(FileService.class);
                     reference.setTimeout(60 * 1000);
 
+                    String url = getUrl(writerConfig.getString("address"));
+                    logger.info("url: {}", url);
+                    reference.setUrl(url);
+
                     ConsumerConfig consumerConfig = new ConsumerConfig();
                     consumerConfig.setSticky(true);
                     consumerConfig.setTimeout(60 * 1000);
@@ -99,5 +111,25 @@ public class FileRpcService implements RpcCallable {
             }
         }
         return fileService;
+    }
+
+    private String getUrl(String address) {
+        logger.info("address: {}", address);
+        ConsulClient client = new ConsulClient(address);
+        HealthServicesRequest request = HealthServicesRequest.newBuilder()
+                .setPassing(true)
+                .setQueryParams(QueryParams.DEFAULT)
+                .build();
+        Response<List<HealthService>> healthyServices = client.getHealthServices(FileService.class.getName(), request);
+        List<HealthService> healthServiceList = healthyServices.getValue();
+
+        if (healthServiceList.size() > 0) {
+            int index = ThreadLocalRandom.current().nextInt(healthServiceList.size());
+            HealthService healthService = healthServiceList.get(index);
+            return healthService.getService().getAddress() + ":" + healthService.getService().getPort();
+        } else {
+            logger.error("can't get health service");
+            throw new RuntimeException("can't get health service");
+        }
     }
 }
