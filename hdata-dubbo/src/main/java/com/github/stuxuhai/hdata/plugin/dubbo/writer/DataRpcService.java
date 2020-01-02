@@ -3,6 +3,11 @@ package com.github.stuxuhai.hdata.plugin.dubbo.writer;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Slf4jReporter;
+import com.ecwid.consul.v1.ConsulClient;
+import com.ecwid.consul.v1.QueryParams;
+import com.ecwid.consul.v1.Response;
+import com.ecwid.consul.v1.health.HealthServicesRequest;
+import com.ecwid.consul.v1.health.model.HealthService;
 import com.github.stuxuhai.hdata.api.Configuration;
 import com.github.stuxuhai.hdata.api.JobContext;
 import com.github.stuxuhai.hdata.api.Record;
@@ -16,6 +21,7 @@ import net.openhft.chronicle.queue.RollCycles;
 import net.openhft.chronicle.queue.impl.StoreFileListener;
 import net.openhft.chronicle.wire.DocumentContext;
 import net.openhft.chronicle.wire.Wire;
+import org.apache.commons.lang.StringUtils;
 import org.apache.dubbo.config.ApplicationConfig;
 import org.apache.dubbo.config.ConsumerConfig;
 import org.apache.dubbo.config.ReferenceConfig;
@@ -28,6 +34,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -292,6 +300,11 @@ public class DataRpcService implements RpcCallable {
                     reference.setInterface(DataService.class);
                     reference.setTimeout(60 * 1000);
 
+                    String clusterId = writerConfig.getString("cluster.id");
+                    String url = getUrl(writerConfig.getString("address"), clusterId);
+                    logger.info("url: {}", url);
+                    reference.setUrl(url);
+
                     ConsumerConfig consumerConfig = new ConsumerConfig();
                     consumerConfig.setSticky(true);
                     consumerConfig.setTimeout(60 * 1000);
@@ -306,5 +319,40 @@ public class DataRpcService implements RpcCallable {
             }
         }
         return dataService;
+    }
+
+    private String getUrl(String address, String clusterId) {
+        logger.info("address: {}, cluster id: {}", address, clusterId);
+        ConsulClient client = new ConsulClient(address);
+        HealthServicesRequest request = HealthServicesRequest.newBuilder()
+                .setPassing(true)
+                .setQueryParams(QueryParams.DEFAULT)
+                .build();
+        Response<List<HealthService>> healthyServices = client.getHealthServices(DataService.class.getName(), request);
+        List<HealthService> healthServiceList = new ArrayList<>();
+        if (StringUtils.isNotEmpty(clusterId) && !"null".equals(clusterId)) {
+            for (HealthService healthService : healthyServices.getValue()) {
+                List<String> tags = healthService.getService().getTags();
+                for (String tag : tags) {
+                    String[] tagArray = tag.split("=");
+                    if ("clusterId".equals(tagArray[0]) && tagArray.length > 1) {
+                        if (clusterId.equals(tagArray[1])) {
+                            healthServiceList.add(healthService);
+                        }
+                    }
+                }
+            }
+        } else {
+            healthServiceList = healthyServices.getValue();
+        }
+
+        if (healthServiceList.size() > 0) {
+            int index = ThreadLocalRandom.current().nextInt(healthServiceList.size());
+            HealthService healthService = healthServiceList.get(index);
+            return healthService.getService().getAddress() + ":" + healthService.getService().getPort();
+        } else {
+            logger.error("can't get health service");
+            throw new RuntimeException("can't get health service");
+        }
     }
 }
