@@ -117,7 +117,7 @@ public class DataRpcService implements RpcCallable {
 
         try {
             this.queueDir = Files.createTempDirectory("hdata-dubbo-data-writer-queue" + taskId + System.currentTimeMillis());
-            this.queueDir.toFile().deleteOnExit();
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> deleteFileAll(queueDir.toFile())));
         } catch (IOException e) {
             throw new RuntimeException("data service prepare error", e);
         }
@@ -271,6 +271,23 @@ public class DataRpcService implements RpcCallable {
             }
         }
         return ret;
+    }
+
+
+    public static void deleteFileAll(File file) {
+        if (file.exists()) {
+            File[] files = file.listFiles();
+            if (files != null) {
+                for (File value : files) {
+                    if (value.isDirectory()) {
+                        deleteFileAll(value);
+                    } else {
+                        value.delete();
+                    }
+                }
+            }
+            file.delete();
+        }
     }
 
     private DataService connectWriterServer(Configuration writerConfig) {
