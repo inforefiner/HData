@@ -55,7 +55,7 @@ for f in $HDATA_HOME/hdata-*; do
     fi
 done
 
-EXCLUDE_LIST="csv excel hbase hdfs hive kafka cloud"
+EXCLUDE_LIST="csv excel hdfs hive kafka cloud"
 for i in $EXCLUDE_LIST
 do
   echo $i
