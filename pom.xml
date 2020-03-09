@@ -91,6 +91,7 @@
 		<module>hdata-kafka</module>
         <module>hdata-spooldir</module>
 		<module>hdata-oracle9i</module>
+		<module>hdata-hbase</module>
         <!--<module>hdata-cloud</module>-->
         <!--
 
