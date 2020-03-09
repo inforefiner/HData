@@ -13,8 +13,8 @@ import org.apache.hadoop.hbase.client.RegionLocator;
 import org.apache.hadoop.hbase.client.Table;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.hbase.util.Pair;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.github.stuxuhai.hdata.api.JobConfig;
 import com.github.stuxuhai.hdata.api.PluginConfig;
@@ -24,7 +24,7 @@ import com.google.common.base.Throwables;
 
 public class HBaseSplitter extends Splitter {
 
-	private static final Logger LOGGER = LogManager.getLogger(HBaseSplitter.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(HBaseSplitter.class);
 
 	@Override
 	public List<PluginConfig> split(JobConfig jobConfig) {
