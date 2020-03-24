@@ -289,6 +289,15 @@ public class JdbcUtils {
         }
     }
 
+    public static boolean isNclobType(int sqlType) {
+        switch (sqlType) {
+            case Types.NCLOB:
+                return true;
+            default:
+                return false;
+        }
+    }
+
     public static Connection getConnection(String driverClassName, String url, String username, String password) throws Exception {
         Class.forName(driverClassName);
         return DriverManager.getConnection(url, username, password);

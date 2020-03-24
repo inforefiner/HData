@@ -28,6 +28,16 @@
 			<groupId>org.apache.hadoop</groupId>
 			<artifactId>hadoop-common</artifactId>
 			<version>${hadoop.version}</version>
+			<exclusions>
+				<exclusion>
+					<groupId>org.apache.httpcomponents</groupId>
+					<artifactId>httpclient</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.apache.httpcomponents</groupId>
+					<artifactId>httpcore</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.hadoop</groupId>
@@ -53,6 +63,33 @@
 			<groupId>com.alibaba</groupId>
 			<artifactId>fastjson</artifactId>
 			<version>1.2.57</version>
+		</dependency>
+		<dependency>
+			<groupId>commons-dbutils</groupId>
+			<artifactId>commons-dbutils</artifactId>
+			<version>1.6</version>
+		</dependency>
+		<dependency>
+			<groupId>com.merce.woven</groupId>
+			<artifactId>woven-data-rpc</artifactId>
+			<version>3.1</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.dubbo</groupId>
+			<artifactId>dubbo</artifactId>
+			<version>2.7.3</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.dubbo</groupId>
+			<artifactId>dubbo-registry-consul</artifactId>
+			<version>2.7.3</version>
+			<exclusions>
+				<exclusion>
+					<groupId>org.apache.dubbo</groupId>
+					<artifactId>dubbo-common</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 	</dependencies>
 </project>
