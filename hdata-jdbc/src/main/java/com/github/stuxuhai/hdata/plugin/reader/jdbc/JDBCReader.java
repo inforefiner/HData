@@ -178,6 +178,14 @@ public class JDBCReader extends Reader {
                             o = "";
                         }
                     }
+                    if (o != null && JdbcUtils.isNclobType(columnTypes[i - 1])) {
+                        NClob nClob = (NClob) o;
+                        try {
+                            o = nClob.getSubString(1, (int) nClob.length());
+                        } catch (Throwable e) {
+                            o = "";
+                        }
+                    }
                     if (o == null && nullString != null && JdbcUtils.isStringType(columnTypes[i - 1])) {
                         r.add(i - 1, nullString);
                     } else if (o == null && nullNonString != null && !JdbcUtils.isStringType(columnTypes[i - 1])) {

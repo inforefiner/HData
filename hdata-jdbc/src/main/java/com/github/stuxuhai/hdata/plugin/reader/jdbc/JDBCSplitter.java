@@ -34,7 +34,7 @@ public class JDBCSplitter extends Splitter {
         }
     }
 
-    private List<PluginConfig> buildPluginConfigs(Connection conn, List<String> sqlList, String splitColumn, PluginConfig readerConfig) throws Throwable {
+    private List<PluginConfig> buildPluginConfigs(Connection conn, List<String> sqlList, String splitColumn, String condition, PluginConfig readerConfig) throws Throwable {
         List<PluginConfig> list = new ArrayList<PluginConfig>();
         String driver = readerConfig.getString(JDBCReaderProperties.DRIVER);
         String table = readerConfig.getString(JDBCReaderProperties.TABLE);
@@ -43,7 +43,7 @@ public class JDBCSplitter extends Splitter {
         long maxFetchSize = ParamUtils.getLong(JDBCReaderProperties.MAX_SIZE_PER_SQL, 3000);
         JDBCIterator iterator = new JDBCIterator();
         for (String sql : sqlList) {
-            long count = JdbcUtils.getCount(conn, sql.replace(CONDITIONS, "(1 = 1)"));
+            long count = JdbcUtils.getCount(conn, sql.replace(CONDITIONS, condition));
             if (count > 0) {
                 long step = maxFetchSize;
                 iterator.add(new JDBCIterator.JdbcUnit(driver, sql, columns, splitColumn, table, 0, count, step, parallelism));
@@ -107,6 +107,8 @@ public class JDBCSplitter extends Splitter {
         String cursorColumn = readerConfig.getString(JDBCReaderProperties.CURSOR_COLUMN);
         String cursorType = readerConfig.getString(JDBCReaderProperties.CURSOR_TYPE);
         String cursorValue = readerConfig.getString(JDBCReaderProperties.CURSOR_VALUE);
+        String condition = readerConfig.getString("condition", "(1 = 1)");
+        logger.info("condition is:" + condition);
 
         logger.info("splitting cursorColumn = {}, cursorType = {}, cursorValue = {}, parallelism = {}", cursorColumn, cursorType, cursorValue, parallelism);
 
@@ -188,7 +190,7 @@ public class JDBCSplitter extends Splitter {
                 }
 
                 //增量字段最大值
-                String newCursorValue = JdbcUtils.getMaxValue(conn, sqlExpr.replace(CONDITIONS, "(1 = 1)"), cursorColumn);
+                String newCursorValue = JdbcUtils.getMaxValue(conn, sqlExpr.replace(CONDITIONS, condition), cursorColumn);
                 if (newCursorValue != null && !newCursorValue.equals(cursorValue)) {
                     sql.append(" AND ");
                     sql.append(cursorColumn);
@@ -203,11 +205,11 @@ public class JDBCSplitter extends Splitter {
 
             if (parallelism > 1 || maxFetchSize > 0) {
                 logger.info("table {} find digital primary key: {}", table, splitKey);
-                return buildPluginConfigs(conn, sqlList, splitKey, readerConfig);
+                return buildPluginConfigs(conn, sqlList, splitKey, condition, readerConfig);
             }
 
             for (int i = 0; i < sqlList.size(); i++) {
-                sqlList.set(i, sqlList.get(i).replace(CONDITIONS, "(1 = 1)"));
+                sqlList.set(i, sqlList.get(i).replace(CONDITIONS, condition));
             }
 
             readerConfig.put(JDBCReaderProperties.SQL, sqlList);

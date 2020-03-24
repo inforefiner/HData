@@ -1,40 +1,78 @@
 package com.github.stuxuhai.hdata.plugin.writer.hbase;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import org.apache.commons.lang.StringUtils;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.*;
-import org.apache.hadoop.hbase.client.*;
-import org.apache.hadoop.hbase.util.Bytes;
-
+import com.alibaba.fastjson.JSON;
+import com.ecwid.consul.v1.ConsulClient;
+import com.ecwid.consul.v1.QueryParams;
+import com.ecwid.consul.v1.Response;
+import com.ecwid.consul.v1.health.HealthServicesRequest;
+import com.ecwid.consul.v1.health.model.HealthService;
 import com.github.stuxuhai.hdata.api.JobContext;
 import com.github.stuxuhai.hdata.api.PluginConfig;
 import com.github.stuxuhai.hdata.api.Record;
 import com.github.stuxuhai.hdata.api.Writer;
 import com.github.stuxuhai.hdata.exception.HDataException;
-import com.google.common.base.Preconditions;;
-import com.alibaba.fastjson.*;
+import com.google.common.base.Preconditions;
+import com.merce.woven.data.rpc.FileService;
+import com.merce.woven.data.rpc.ObjectService;
+import org.apache.commons.lang.StringUtils;
+import org.apache.dubbo.config.ApplicationConfig;
+import org.apache.dubbo.config.ConsumerConfig;
+import org.apache.dubbo.config.ReferenceConfig;
+import org.apache.dubbo.config.RegistryConfig;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hbase.*;
+import org.apache.hadoop.hbase.client.*;
+import org.apache.hadoop.hbase.util.Bytes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.sql.Blob;
+import java.sql.Clob;
+import java.sql.NClob;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class HBaseWriter extends Writer {
 
     private final Logger logger = LoggerFactory.getLogger(HBaseWriter.class);
 
+    private static AtomicInteger ChannelGenerator = new AtomicInteger();
+
     private Table table;
+
     private int batchSize;
-    //	private int rowkeyIndex = -1;
-    private final List<Put> putList = new ArrayList<Put>();
+
+    private final List<Put> putList = new ArrayList<>();
+
     private String[] columns;
-    //	private static final String ROWKEY = ":rowkey";
+
     private String[] rowkeyCol;
+
     private String namespace;
+
     private String tableName;
+
+    private String tenantId;
+
+    private String taskId;
+
+    private String serviceType;
+
+    private String channelId;
+
+    private AtomicLong in = new AtomicLong(0L);
+
+    private AtomicLong out = new AtomicLong(0L);
+
+    private static ObjectService objectService;
+
+    private JobContext jobContext;
 
     @Override
     public void prepare(JobContext context, PluginConfig writerConfig) {
@@ -50,7 +88,7 @@ public class HBaseWriter extends Writer {
         conf.set("hbase.zookeeper.quorum", writerConfig.getString(HBaseWriterProperties.ZOOKEEPER_QUORUM));
         conf.set("hbase.zookeeper.property.clientPort",
                 writerConfig.getString(HBaseWriterProperties.ZOOKEEPER_PROPERTY_CLIENTPORT, "2181"));
-        batchSize = writerConfig.getInt(HBaseWriterProperties.BATCH_INSERT_SIZE, 1);
+        batchSize = writerConfig.getInt(HBaseWriterProperties.BATCH_INSERT_SIZE, 5);
 
         Preconditions.checkNotNull(writerConfig.getString("fields"),
                 "HBase writer required property: fields");
@@ -62,30 +100,34 @@ public class HBaseWriter extends Writer {
 
         namespace = writerConfig.getString("namespace");
 
-        tableName = writerConfig.getString("table");
+        tableName = writerConfig.getString(HBaseWriterProperties.TABLE);
 
-//		Preconditions.checkNotNull(writerConfig.getString(HBaseWriterProperties.COLUMNS),
-//				"HBase writer required property: zookeeper.columns");
-//		columns = writerConfig.getString(HBaseWriterProperties.COLUMNS).split(",");
-//		for (int i = 0, len = columns.length; i < len; i++) {
-//			if (ROWKEY.equalsIgnoreCase(columns[i])) {
-//				rowkeyIndex = i;
-//				break;
-//			}
-//		}
-//
-//		if (rowkeyIndex == -1) {
-//			throw new HDataException("Can not find :rowkey in columnsMapping of HBase Writer!");
-//		}
+        tenantId = writerConfig.getString("tenantId");
+
+        taskId = writerConfig.getString("taskId");
+
+        serviceType = writerConfig.getString("serviceType");
+
+        channelId = "" + ChannelGenerator.getAndIncrement();
+
+        this.jobContext = context;
+
+        String cursorValue = context.getJobConfig().getString("CursorValue");
+        if (cursorValue != null) {
+            writerConfig.setString("CursorValue", cursorValue);
+        }
+
+        objectService = connectWriterServer(writerConfig);
+
+        objectService.prepare(tenantId, taskId, writerConfig);
 
         try {
-            Preconditions.checkNotNull(writerConfig.getString(HBaseWriterProperties.TABLE),
-                    "HBase writer required property: table");
+            Preconditions.checkNotNull(tableName, "HBase writer required property: table");
             Connection conn = ConnectionFactory.createConnection(conf);
             createTable(conn, namespace, tableName, new String[]{"kf", "vf"});
-
-            table = conn.getTable(TableName.valueOf(writerConfig.getString(HBaseWriterProperties.TABLE)));
+            table = conn.getTable(TableName.valueOf(namespace + ":" + tableName));
         } catch (IOException e) {
+            objectService.onError(tenantId, taskId, channelId, new RuntimeException("hbase conn error"));
             throw new HDataException(e);
         }
 
@@ -102,9 +144,37 @@ public class HBaseWriter extends Writer {
         Put put = new Put(Bytes.toBytes(SHA256Util.getSHA256StrJava(rowkey.toString())));
         for (int i = rowkeyCol.length; i < rowkeyCol.length + columns.length; i++) {
             Object o = record.get(i);
+            if (o instanceof Clob) {
+                if (o instanceof NClob) {
+                    NClob nClob = (NClob) o;
+                    try {
+                        o = nClob.getSubString(1, (int) nClob.length());
+                    } catch (Throwable e) {
+                        o = "";
+                    }
+                } else {
+                    Clob clob = (Clob) o;
+                    try {
+                        o = clob.getSubString(1, (int) clob.length());
+                    } catch (Throwable e) {
+                        o = "";
+                    }
+                }
+            }
+            if (o instanceof Blob) {
+                Blob blob = (Blob) o;
+                try {
+                    o = new String(blob.getBytes(1, (int) blob.length()), "UTF8");
+                } catch (Throwable e) {
+                    o = "";
+                }
+            }
+
             put.addColumn(Bytes.toBytes("vf"), Bytes.toBytes(columns[i - rowkeyCol.length]), Bytes.toBytes(o.toString()));
         }
         put.addColumn(Bytes.toBytes("kf"), Bytes.toBytes("kf"), Bytes.toBytes(JSON.toJSON(map).toString()));
+        in.incrementAndGet();
+
 //		Object rowkeyValue = record.get(rowkeyIndex);
 //		Put put = new Put(Bytes.toBytes(rowkeyValue == null ? "NULL" : rowkeyValue.toString()));
 //		for (int i = 0, len = record.size(); i < len; i++) {
@@ -120,9 +190,12 @@ public class HBaseWriter extends Writer {
             try {
                 table.put(putList);
             } catch (IOException e) {
+                objectService.onError(tenantId, taskId, channelId, new RuntimeException("write hbase has error !"));
                 throw new HDataException(e);
             }
+            out.addAndGet(putList.size());
             putList.clear();
+            objectService.onUpdate(tenantId, taskId, channelId, in.get(), out.get());
         }
     }
 
@@ -135,9 +208,16 @@ public class HBaseWriter extends Writer {
                 }
                 table.close();
             } catch (IOException e) {
+                objectService.onError(tenantId, taskId, channelId, new RuntimeException("write hbase has error !"));
                 throw new HDataException(e);
             }
+            out.addAndGet(putList.size());
             putList.clear();
+        }
+        if (jobContext.isReaderError() || jobContext.isWriterError()) {
+            objectService.onError(tenantId, taskId, channelId, new RuntimeException("reader or writer has error !"));
+        } else {
+            objectService.onFinish(tenantId, taskId, channelId, in.get(), out.get());
         }
     }
 
@@ -159,6 +239,64 @@ public class HBaseWriter extends Writer {
                 hTableDescriptor.addFamily(hColumnDescriptor);
             }
             admin.createTable(hTableDescriptor);
+        }
+    }
+
+    public ObjectService connectWriterServer(com.github.stuxuhai.hdata.api.Configuration writerConfig) {
+        if (objectService == null) {
+            synchronized (ObjectService.class) {
+                if (objectService == null) {
+                    ApplicationConfig application = new ApplicationConfig();
+                    application.setName("hdata-dubbo-object-writer");
+                    application.setQosEnable(false);
+                    RegistryConfig registry = new RegistryConfig();
+                    String protocol = writerConfig.getString("protocol", "consul");
+                    registry.setProtocol(protocol);
+                    registry.setAddress(writerConfig.getString("address"));
+
+                    ReferenceConfig<ObjectService> reference = new ReferenceConfig<>();
+                    reference.setApplication(application);
+                    reference.setRegistry(registry); // 多个注册中心可以用setRegistries()
+                    reference.setInterface(ObjectService.class);
+                    reference.setTimeout(60 * 1000);
+
+                    String url = getUrl(writerConfig.getString("address"));
+                    logger.info("url: {}", url);
+                    reference.setUrl(url);
+
+                    ConsumerConfig consumerConfig = new ConsumerConfig();
+                    consumerConfig.setSticky(true);
+                    consumerConfig.setTimeout(60 * 1000);
+                    reference.setConsumer(consumerConfig);
+
+                    try {
+                        objectService = reference.get();
+                    } catch (Exception e) {
+                        logger.error("can't connect registry rpc-file-service", e);
+                    }
+                }
+            }
+        }
+        return objectService;
+    }
+
+    private String getUrl(String address) {
+        logger.info("address: {}", address);
+        ConsulClient client = new ConsulClient(address);
+        HealthServicesRequest request = HealthServicesRequest.newBuilder()
+                .setPassing(true)
+                .setQueryParams(QueryParams.DEFAULT)
+                .build();
+        Response<List<HealthService>> healthyServices = client.getHealthServices(FileService.class.getName(), request);
+        List<HealthService> healthServiceList = healthyServices.getValue();
+
+        if (healthServiceList.size() > 0) {
+            int index = ThreadLocalRandom.current().nextInt(healthServiceList.size());
+            HealthService healthService = healthServiceList.get(index);
+            return healthService.getService().getAddress() + ":" + healthService.getService().getPort();
+        } else {
+            logger.error("can't get health service");
+            throw new RuntimeException("can't get health service");
         }
     }
 }
