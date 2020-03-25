@@ -233,7 +233,7 @@ public class HBaseWriter extends Writer {
             }
         }
         if (!admin.tableExists(table)) {
-            HTableDescriptor hTableDescriptor = new HTableDescriptor(tableName);
+            HTableDescriptor hTableDescriptor = new HTableDescriptor(table);
             for (String col : cols) {
                 HColumnDescriptor hColumnDescriptor = new HColumnDescriptor(col);
                 hTableDescriptor.addFamily(hColumnDescriptor);
