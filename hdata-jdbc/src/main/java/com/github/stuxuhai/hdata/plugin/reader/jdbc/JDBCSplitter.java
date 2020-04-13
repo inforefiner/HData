@@ -35,7 +35,7 @@ public class JDBCSplitter extends Splitter {
     }
 
     private List<PluginConfig> buildPluginConfigs(Connection conn, List<String> sqlList, String splitColumn, String condition, PluginConfig readerConfig) throws Throwable {
-        List<PluginConfig> list = new ArrayList<PluginConfig>();
+        List<PluginConfig> list = new ArrayList<>();
         String driver = readerConfig.getString(JDBCReaderProperties.DRIVER);
         String table = readerConfig.getString(JDBCReaderProperties.TABLE);
         String columns = readerConfig.getString(JDBCReaderProperties.COLUMNS);
@@ -46,7 +46,7 @@ public class JDBCSplitter extends Splitter {
             long count = JdbcUtils.getCount(conn, sql.replace(CONDITIONS, condition));
             if (count > 0) {
                 long step = maxFetchSize;
-                iterator.add(new JDBCIterator.JdbcUnit(driver, sql, columns, splitColumn, table, 0, count, step, parallelism));
+                iterator.add(new JDBCIterator.JdbcUnit(driver, sql, condition, columns, splitColumn, table, 0, count, step, parallelism));
             }
         }
         for (int i = 0; i < parallelism; i++) {
@@ -61,9 +61,7 @@ public class JDBCSplitter extends Splitter {
     private boolean isDateTimeType(String type) {
         if (StringUtils.isNotBlank(type)) {
             type = type.toUpperCase();
-            if ((type.indexOf("DATE") > -1 || type.indexOf("TIME") > -1)) {
-                return true;
-            }
+            return (type.indexOf("DATE") > -1 || type.indexOf("TIME") > -1);
         }
         return false;
     }
