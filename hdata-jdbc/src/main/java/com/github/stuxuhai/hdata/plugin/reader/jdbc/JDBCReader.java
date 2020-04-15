@@ -9,8 +9,10 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.charset.StandardCharsets;
 import java.sql.*;
 import java.text.DecimalFormat;
+import java.util.Arrays;
 import java.util.List;
 
 public class JDBCReader extends Reader {
@@ -151,8 +153,10 @@ public class JDBCReader extends Reader {
                 for (int i = 1; i <= columnCount; i++) {
                     fields.add(metaData.getColumnName(i));
                     columnTypes[i - 1] = metaData.getColumnType(i);
+                    logger.info("column " + i + " type: " + metaData.getColumnType(i));
                 }
             }
+
             while (rs.next()) {
                 Record r = new DefaultRecord(columnCount);
                 for (int i = 1; i <= columnCount; i++) {
@@ -173,7 +177,23 @@ public class JDBCReader extends Reader {
                     if (o != null && JdbcUtils.isBlobType(columnTypes[i - 1])) {
                         Blob blob = (Blob) o;
                         try {
-                            o = new String(blob.getBytes(1, (int) blob.length()), "UTF8");
+                            o = new String(blob.getBytes(1, (int) blob.length()), StandardCharsets.UTF_8);
+                        } catch (Throwable e) {
+                            o = "";
+                        }
+                    }
+                    if (o != null && JdbcUtils.isNclobType(columnTypes[i - 1])) {
+                        NClob nClob = (NClob) o;
+                        try {
+                            o = nClob.getSubString(1, (int) nClob.length());
+                        } catch (Throwable e) {
+                            o = "";
+                        }
+                    }
+                    if (o != null && JdbcUtils.isBinaryType(columnTypes[i - 1])) {
+                        byte[] bytes = rs.getBytes(i);
+                        try {
+                            o = new String(bytes, StandardCharsets.UTF_8);
                         } catch (Throwable e) {
                             o = "";
                         }

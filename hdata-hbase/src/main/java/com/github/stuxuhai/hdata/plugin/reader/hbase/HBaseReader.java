@@ -13,7 +13,7 @@ import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.client.Table;
 import org.apache.hadoop.hbase.util.Bytes;
 
-import com.github.stuxuhai.hdata.api.DefaultRecord;
+import com.github.stuxuhai.hdata.core.DefaultRecord;
 import com.github.stuxuhai.hdata.api.Fields;
 import com.github.stuxuhai.hdata.api.JobContext;
 import com.github.stuxuhai.hdata.api.OutputFieldsDeclarer;
