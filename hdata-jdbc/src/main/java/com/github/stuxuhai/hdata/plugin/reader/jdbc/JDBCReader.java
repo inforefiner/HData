@@ -153,7 +153,7 @@ public class JDBCReader extends Reader {
                 for (int i = 1; i <= columnCount; i++) {
                     fields.add(metaData.getColumnName(i));
                     columnTypes[i - 1] = metaData.getColumnType(i);
-                    logger.info("column " + i + " type: " + metaData.getColumnType(i));
+                    logger.info("column: " + metaData.getColumnName(i) + " type: " + metaData.getColumnType(i));
                 }
             }
 
