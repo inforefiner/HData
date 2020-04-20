@@ -83,6 +83,7 @@ public class HBaseWriter extends Writer {
         conf.set("hbase.zookeeper.quorum", writerConfig.getString(HBaseWriterProperties.ZOOKEEPER_QUORUM));
         conf.set("hbase.zookeeper.property.clientPort",
                 writerConfig.getString(HBaseWriterProperties.ZOOKEEPER_PROPERTY_CLIENTPORT, "2181"));
+        conf.set("hbase.client.keyvalue.maxsize", writerConfig.getString(HBaseWriterProperties.HBASE_VALUE_SIZE, "104857600"));
         batchSize = writerConfig.getInt(HBaseWriterProperties.BATCH_INSERT_SIZE, 5);
 
         Preconditions.checkNotNull(writerConfig.getString("fields"),
