@@ -7,4 +7,5 @@ public class HBaseWriterProperties {
 	public static final String COLUMNS = "columns";
 	public static final String BATCH_INSERT_SIZE = "batch.insert.size";
 	public static final String ZOOKEEPER_ZNODE_PARENT = "zookeeper.znode.parent";
+	public static final String HBASE_VALUE_SIZE = "hbase.value.size";
 }
