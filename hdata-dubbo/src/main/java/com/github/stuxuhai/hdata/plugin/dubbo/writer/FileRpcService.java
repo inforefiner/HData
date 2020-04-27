@@ -93,7 +93,8 @@ public class FileRpcService implements RpcCallable {
                     reference.setInterface(FileService.class);
                     reference.setTimeout(60 * 1000);
 
-                    String url = getUrl(writerConfig.getString("address"));
+                    String clusterId = writerConfig.getString("cluster.id");
+                    String url = getUrl(writerConfig.getString("address"), clusterId);
                     logger.info("url: {}", url);
                     reference.setUrl(url);
 
@@ -113,15 +114,30 @@ public class FileRpcService implements RpcCallable {
         return fileService;
     }
 
-    private String getUrl(String address) {
-        logger.info("address: {}", address);
+    private String getUrl(String address, String clusterId) {
+        logger.info("address: {}, cluster id: {}", address, clusterId);
         ConsulClient client = new ConsulClient(address);
         HealthServicesRequest request = HealthServicesRequest.newBuilder()
                 .setPassing(true)
                 .setQueryParams(QueryParams.DEFAULT)
                 .build();
-        Response<List<HealthService>> healthyServices = client.getHealthServices(FileService.class.getName(), request);
-        List<HealthService> healthServiceList = healthyServices.getValue();
+        Response<List<HealthService>> healthyServices = client.getHealthServices(DataService.class.getName(), request);
+        List<HealthService> healthServiceList = new ArrayList<>();
+        if (StringUtils.isNotEmpty(clusterId) && !"null".equals(clusterId)) {
+            for (HealthService healthService : healthyServices.getValue()) {
+                List<String> tags = healthService.getService().getTags();
+                for (String tag : tags) {
+                    String[] tagArray = tag.split("=");
+                    if ("clusterId".equals(tagArray[0]) && tagArray.length > 1) {
+                        if (clusterId.equals(tagArray[1])) {
+                            healthServiceList.add(healthService);
+                        }
+                    }
+                }
+            }
+        } else {
+            healthServiceList = healthyServices.getValue();
+        }
 
         if (healthServiceList.size() > 0) {
             int index = ThreadLocalRandom.current().nextInt(healthServiceList.size());

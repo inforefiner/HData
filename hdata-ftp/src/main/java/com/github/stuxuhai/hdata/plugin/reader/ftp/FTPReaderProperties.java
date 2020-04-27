@@ -20,6 +20,9 @@ public class FTPReaderProperties {
     public static final String READ_TO = "read.to"; //hdfs, socket
     public static final String HDFS_PATH = "hdfs.path";
     public static final String HDFS_OVERWRITE = "hdfs.overwrite";
+//    public static final String CLUSTER_ID = "cluster.id";
+//    public static final String HDFS_URL = "hdfs.url";
+    public static final String HADOOP_CONF_PATH = "hadoop.conf.path";
 
     public static final String HTTP_URL = "http.url";
 }

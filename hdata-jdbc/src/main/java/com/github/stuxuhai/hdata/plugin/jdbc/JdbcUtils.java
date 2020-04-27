@@ -298,6 +298,17 @@ public class JdbcUtils {
         }
     }
 
+    public static boolean isBinaryType(int sqlType) {
+        switch (sqlType) {
+            case Types.BINARY:
+            case Types.LONGVARBINARY:
+            case Types.VARBINARY:
+                return true;
+            default:
+                return false;
+        }
+    }
+
     public static Connection getConnection(String driverClassName, String url, String username, String password) throws Exception {
         Class.forName(driverClassName);
         return DriverManager.getConnection(url, username, password);
