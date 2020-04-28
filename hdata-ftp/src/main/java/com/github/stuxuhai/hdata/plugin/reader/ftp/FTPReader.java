@@ -87,9 +87,10 @@ public class FTPReader extends Reader {
         } else {
             operator = new FtpClient();
         }
+        String tmpDir = "/tmp/hadoop_conf_" + System.currentTimeMillis() + "/";
         try {
             operator.connect(host, port, username, password);
-            HdfsUtil hdfsUtil = HdfsUtil.getInstance(hadoopConfPath);
+            HdfsUtil hdfsUtil = HdfsUtil.getInstance(hadoopConfPath, tmpDir);
             for (FtpFile file : files) {
                 String filePath = file.getPath();
                 String _filePath = new String(filePath.getBytes(StandardCharsets.UTF_8), StandardCharsets.ISO_8859_1);
@@ -203,9 +204,12 @@ public class FTPReader extends Reader {
                 }
             }
         } catch (Throwable e) {
+            LOG.info("ftp reader error:" + e.getMessage());
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> deleteFileAll(new File(tmpDir))));
             throw new HDataException(e);
         } finally {
             operator.close();
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> deleteFileAll(new File(tmpDir))));
         }
     }
 
@@ -217,6 +221,22 @@ public class FTPReader extends Reader {
     @Override
     public Splitter newSplitter() {
         return new FTPSplitter();
+    }
+
+    public static void deleteFileAll(File file) {
+        if (file.exists()) {
+            File[] files = file.listFiles();
+            if (files != null) {
+                for (File value : files) {
+                    if (value.isDirectory()) {
+                        deleteFileAll(value);
+                    } else {
+                        value.delete();
+                    }
+                }
+            }
+            file.delete();
+        }
     }
 
 }
