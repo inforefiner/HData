@@ -173,14 +173,6 @@ public class JDBCReader extends Reader {
                             o = "";
                         }
                     }
-                    if (o != null && JdbcUtils.isBlobType(columnTypes[i - 1])) {
-                        Blob blob = (Blob) o;
-                        try {
-                            o = new String(blob.getBytes(1, (int) blob.length()), StandardCharsets.UTF_8);
-                        } catch (Throwable e) {
-                            o = "";
-                        }
-                    }
                     if (o != null && JdbcUtils.isNclobType(columnTypes[i - 1])) {
                         NClob nClob = (NClob) o;
                         try {
@@ -190,12 +182,7 @@ public class JDBCReader extends Reader {
                         }
                     }
                     if (o != null && JdbcUtils.isBinaryType(columnTypes[i - 1])) {
-                        byte[] bytes = rs.getBytes(i);
-                        try {
-                            o = new String(bytes, StandardCharsets.UTF_8);
-                        } catch (Throwable e) {
-                            o = "";
-                        }
+                        o = rs.getBytes(i);
                     }
                     if (o == null && nullString != null && JdbcUtils.isStringType(columnTypes[i - 1])) {
                         r.add(i - 1, nullString);
