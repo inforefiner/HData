@@ -15,7 +15,7 @@ import java.util.List;
 
 public class FileRpcService implements RpcCallable {
 
-    private final Logger logger = LoggerFactory.getLogger(DataRpcService.class);
+    private final Logger logger = LoggerFactory.getLogger(FileRpcService.class);
 
     private String tenantId;
     private String taskId;
@@ -61,8 +61,10 @@ public class FileRpcService implements RpcCallable {
     @Override
     public void close(long total, boolean isLast) {
         if (fileService != null) {
-            if (jobContext.isReaderError() || jobContext.isWriterError()) {
-                fileService.onError(tenantId, taskId, channelId, new RuntimeException("reader or writer has error !"));
+            if (jobContext.isReaderError()) {
+                fileService.onError(tenantId, taskId, channelId, new RuntimeException("reader has error !"));
+            } else if (jobContext.isWriterError()) {
+                fileService.onError(tenantId, taskId, channelId, new RuntimeException("writer has error !"));
             } else {
                 fileService.onFinish(tenantId, taskId, channelId, total, isLast);
             }
@@ -77,7 +79,7 @@ public class FileRpcService implements RpcCallable {
                     application.setName("hdata-dubbo-file-writer");
                     application.setQosEnable(false);
                     RegistryConfig registry = new RegistryConfig();
-                    String protocol = writerConfig.getString("protocol", "consul");
+                    String protocol = writerConfig.getString("protocol", "nacos");
                     registry.setProtocol(protocol);
                     registry.setAddress(writerConfig.getString("address"));
 

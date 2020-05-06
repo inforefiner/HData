@@ -9,6 +9,7 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.charset.StandardCharsets;
 import java.sql.*;
 import java.text.DecimalFormat;
 import java.util.List;
@@ -151,8 +152,10 @@ public class JDBCReader extends Reader {
                 for (int i = 1; i <= columnCount; i++) {
                     fields.add(metaData.getColumnName(i));
                     columnTypes[i - 1] = metaData.getColumnType(i);
+                    logger.info("column: " + metaData.getColumnName(i) + " type: " + metaData.getColumnType(i));
                 }
             }
+
             while (rs.next()) {
                 Record r = new DefaultRecord(columnCount);
                 for (int i = 1; i <= columnCount; i++) {
@@ -170,14 +173,6 @@ public class JDBCReader extends Reader {
                             o = "";
                         }
                     }
-                    if (o != null && JdbcUtils.isBlobType(columnTypes[i - 1])) {
-                        Blob blob = (Blob) o;
-                        try {
-                            o = new String(blob.getBytes(1, (int) blob.length()), "UTF8");
-                        } catch (Throwable e) {
-                            o = "";
-                        }
-                    }
                     if (o != null && JdbcUtils.isNclobType(columnTypes[i - 1])) {
                         NClob nClob = (NClob) o;
                         try {
@@ -185,6 +180,9 @@ public class JDBCReader extends Reader {
                         } catch (Throwable e) {
                             o = "";
                         }
+                    }
+                    if (o != null && JdbcUtils.isBinaryType(columnTypes[i - 1])) {
+                        o = rs.getBytes(i);
                     }
                     if (o == null && nullString != null && JdbcUtils.isStringType(columnTypes[i - 1])) {
                         r.add(i - 1, nullString);

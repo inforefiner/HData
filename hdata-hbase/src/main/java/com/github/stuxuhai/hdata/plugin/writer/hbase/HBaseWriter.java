@@ -83,6 +83,7 @@ public class HBaseWriter extends Writer {
         conf.set("hbase.zookeeper.quorum", writerConfig.getString(HBaseWriterProperties.ZOOKEEPER_QUORUM));
         conf.set("hbase.zookeeper.property.clientPort",
                 writerConfig.getString(HBaseWriterProperties.ZOOKEEPER_PROPERTY_CLIENTPORT, "2181"));
+        conf.set("hbase.client.keyvalue.maxsize", writerConfig.getString(HBaseWriterProperties.HBASE_VALUE_SIZE, "104857600"));
         batchSize = writerConfig.getInt(HBaseWriterProperties.BATCH_INSERT_SIZE, 5);
 
         Preconditions.checkNotNull(writerConfig.getString("fields"),
@@ -139,46 +140,14 @@ public class HBaseWriter extends Writer {
         Put put = new Put(Bytes.toBytes(SHA256Util.getSHA256StrJava(rowkey.toString())));
         for (int i = rowkeyCol.length; i < rowkeyCol.length + columns.length; i++) {
             Object o = record.get(i);
-            if (o instanceof Clob) {
-                if (o instanceof NClob) {
-                    NClob nClob = (NClob) o;
-                    try {
-                        o = nClob.getSubString(1, (int) nClob.length());
-                    } catch (Throwable e) {
-                        o = "";
-                    }
-                } else {
-                    Clob clob = (Clob) o;
-                    try {
-                        o = clob.getSubString(1, (int) clob.length());
-                    } catch (Throwable e) {
-                        o = "";
-                    }
-                }
+            if (o instanceof byte[]) {
+                put.addColumn(Bytes.toBytes("vf"), Bytes.toBytes(columns[i - rowkeyCol.length]), (byte[]) o);
+            } else {
+                put.addColumn(Bytes.toBytes("vf"), Bytes.toBytes(columns[i - rowkeyCol.length]), Bytes.toBytes(o.toString()));
             }
-            if (o instanceof Blob) {
-                Blob blob = (Blob) o;
-                try {
-                    o = new String(blob.getBytes(1, (int) blob.length()), "UTF8");
-                } catch (Throwable e) {
-                    o = "";
-                }
-            }
-
-            put.addColumn(Bytes.toBytes("vf"), Bytes.toBytes(columns[i - rowkeyCol.length]), Bytes.toBytes(o.toString()));
         }
         put.addColumn(Bytes.toBytes("kf"), Bytes.toBytes("kf"), Bytes.toBytes(JSON.toJSON(map).toString()));
         in.incrementAndGet();
-
-//		Object rowkeyValue = record.get(rowkeyIndex);
-//		Put put = new Put(Bytes.toBytes(rowkeyValue == null ? "NULL" : rowkeyValue.toString()));
-//		for (int i = 0, len = record.size(); i < len; i++) {
-//			if (i != rowkeyIndex) {
-//				String[] tokens = columns[i].split(":");
-//				put.addColumn(Bytes.toBytes(tokens[0]), Bytes.toBytes(tokens[1]),
-//						record.get(i) == null ? null : Bytes.toBytes(record.get(i).toString()));
-//			}
-//		}
 
         putList.add(put);
         if (putList.size() == batchSize) {
@@ -245,7 +214,7 @@ public class HBaseWriter extends Writer {
                     application.setName("hdata-dubbo-object-writer");
                     application.setQosEnable(false);
                     RegistryConfig registry = new RegistryConfig();
-                    String protocol = writerConfig.getString("protocol", "consul");
+                    String protocol = writerConfig.getString("protocol", "nacos");
                     registry.setProtocol(protocol);
                     registry.setAddress(writerConfig.getString("address"));
 

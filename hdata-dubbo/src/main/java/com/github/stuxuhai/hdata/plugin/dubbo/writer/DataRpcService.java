@@ -294,7 +294,7 @@ public class DataRpcService implements RpcCallable {
                     application.setName("hdata-dubbo-data-writer");
                     application.setQosEnable(false);
                     RegistryConfig registry = new RegistryConfig();
-                    String protocol = writerConfig.getString("protocol", "consul");
+                    String protocol = writerConfig.getString("protocol", "nacos");
                     registry.setProtocol(protocol);
 
                     registry.setAddress(writerConfig.getString("address"));
