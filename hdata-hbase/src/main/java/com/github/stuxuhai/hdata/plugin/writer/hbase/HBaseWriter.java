@@ -1,18 +1,14 @@
 package com.github.stuxuhai.hdata.plugin.writer.hbase;
 
 import com.alibaba.fastjson.JSON;
-import com.ecwid.consul.v1.ConsulClient;
-import com.ecwid.consul.v1.QueryParams;
-import com.ecwid.consul.v1.Response;
-import com.ecwid.consul.v1.health.HealthServicesRequest;
-import com.ecwid.consul.v1.health.model.HealthService;
+import com.alibaba.nacos.api.naming.pojo.Instance;
+import com.alibaba.nacos.client.naming.NacosNamingService;
 import com.github.stuxuhai.hdata.api.JobContext;
 import com.github.stuxuhai.hdata.api.PluginConfig;
 import com.github.stuxuhai.hdata.api.Record;
 import com.github.stuxuhai.hdata.api.Writer;
 import com.github.stuxuhai.hdata.exception.HDataException;
 import com.google.common.base.Preconditions;
-import com.merce.woven.data.rpc.FileService;
 import com.merce.woven.data.rpc.ObjectService;
 import org.apache.commons.lang.StringUtils;
 import org.apache.dubbo.config.ApplicationConfig;
@@ -34,7 +30,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -219,7 +214,7 @@ public class HBaseWriter extends Writer {
                     application.setName("hdata-dubbo-object-writer");
                     application.setQosEnable(false);
                     RegistryConfig registry = new RegistryConfig();
-                    String protocol = writerConfig.getString("protocol", "consul");
+                    String protocol = writerConfig.getString("protocol", "nacos");
                     registry.setProtocol(protocol);
                     registry.setAddress(writerConfig.getString("address"));
 
@@ -229,7 +224,8 @@ public class HBaseWriter extends Writer {
                     reference.setInterface(ObjectService.class);
                     reference.setTimeout(60 * 1000);
 
-                    String url = getUrl(writerConfig.getString("address"));
+                    String clusterId = writerConfig.getString("cluster.id");
+                    String url = getUrl(writerConfig.getString("address"), clusterId);
                     logger.info("url: {}", url);
                     reference.setUrl(url);
 
@@ -249,23 +245,36 @@ public class HBaseWriter extends Writer {
         return objectService;
     }
 
-    private String getUrl(String address) {
-        logger.info("address: {}", address);
-        ConsulClient client = new ConsulClient(address);
-        HealthServicesRequest request = HealthServicesRequest.newBuilder()
-                .setPassing(true)
-                .setQueryParams(QueryParams.DEFAULT)
-                .build();
-        Response<List<HealthService>> healthyServices = client.getHealthServices(FileService.class.getName(), request);
-        List<HealthService> healthServiceList = healthyServices.getValue();
+    private String getUrl(String address, String clusterId) {
+        logger.info("address: {}, cluster id: {}", address, clusterId);
+        String serviceName = "providers:"+ObjectService.class.getName()+"::";
+        try {
+            NacosNamingService namingService = new NacosNamingService(address) ;
+            List<Instance> list = namingService.getAllInstances(serviceName);
 
-        if (healthServiceList.size() > 0) {
-            int index = ThreadLocalRandom.current().nextInt(healthServiceList.size());
-            HealthService healthService = healthServiceList.get(index);
-            return healthService.getService().getAddress() + ":" + healthService.getService().getPort();
-        } else {
-            logger.error("can't get health service");
-            throw new RuntimeException("can't get health service");
+            if(list != null && list.size() > 0){
+                if(StringUtils.isEmpty(clusterId)){
+                    Instance instance = list.get(0);
+                    return instance.getIp()+ ":" + instance.getPort();
+                }
+
+                for(Instance instance : list){
+                    if(instance.getMetadata().containsKey("clusterId")){
+                        if(clusterId.equals(instance.getMetadata().get("clusterId"))){
+                            return instance.getIp()+ ":" + instance.getPort();
+                        }
+                    }
+                }
+            }else{
+                logger.error("get available service for " + serviceName + " is null");
+                throw new RuntimeException("get available service for " + serviceName + " is null");
+            }
+
+            logger.error("can't get available service for " + serviceName);
+            throw new RuntimeException("can't get available service for " + serviceName);
+        }catch (Exception e){
+            logger.error("get available service exception for " + serviceName, e);
+            throw new RuntimeException("get available service exception for " + serviceName);
         }
     }
 }
