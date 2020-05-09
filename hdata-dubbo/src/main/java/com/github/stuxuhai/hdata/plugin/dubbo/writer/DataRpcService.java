@@ -32,6 +32,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -336,38 +337,40 @@ public class DataRpcService implements RpcCallable {
 
     /**
      * 检查哪个datahub存活并且和clusterI匹配
+     *
      * @param address
      * @param clusterId
      * @return
      */
     private String getUrl(String address, String clusterId) {
         logger.info("address: {}, cluster id: {}", address, clusterId);
-        String serviceName = "providers:"+DataService.class.getName()+"::";
+        String serviceName = "providers:" + DataService.class.getName() + "::";
         try {
-            NacosNamingService namingService = new NacosNamingService(address) ;
-            List<Instance> list = namingService.getAllInstances(serviceName);
+            NacosNamingService namingService = new NacosNamingService(address);
+            List<Instance> list = new ArrayList<>();
 
-            if(list != null && list.size() > 0){
-                if(StringUtils.isEmpty(clusterId)){
-                    Instance instance = list.get(0);
-                    return instance.getIp()+ ":" + instance.getPort();
-                }
-
-                for(Instance instance : list){
-                    if(instance.getMetadata().containsKey("clusterId")){
-                        if(clusterId.equals(instance.getMetadata().get("clusterId"))){
-                            return instance.getIp()+ ":" + instance.getPort();
+            if (StringUtils.isNotEmpty(clusterId)) {
+                for (Instance instance : namingService.getAllInstances(serviceName)) {
+                    if (instance.getMetadata().containsKey("clusterId")) {
+                        if (clusterId.equals(instance.getMetadata().get("clusterId"))) {
+                            list.add(instance);
                         }
                     }
                 }
-            }else{
-                logger.error("get available service for " + serviceName + " is null");
-                throw new RuntimeException("get available service for " + serviceName + " is null");
+            } else {
+                list = namingService.getAllInstances(serviceName);
             }
 
-            logger.error("can't get available service for " + serviceName);
-            throw new RuntimeException("can't get available service for " + serviceName);
-        }catch (Exception e){
+            if (list != null && list.size() > 0) {
+                int index = ThreadLocalRandom.current().nextInt(list.size());
+                Instance instance = list.get(index);
+                return instance.getIp() + ":" + instance.getPort();
+
+            } else {
+                logger.error("can't get available service for " + serviceName);
+                throw new RuntimeException("can't get available service for " + serviceName);
+            }
+        } catch (Exception e) {
             logger.error("get available service exception for " + serviceName, e);
             throw new RuntimeException("get available service exception for " + serviceName);
         }
