@@ -253,7 +253,7 @@ public class HBaseWriter extends Writer {
             NacosNamingService namingService = new NacosNamingService(address);
             List<Instance> list = new ArrayList<>();
 
-            if (StringUtils.isNotEmpty(clusterId)) {
+            if (StringUtils.isNotEmpty(clusterId) && !"null".equalsIgnoreCase(clusterId)) {
                 for (Instance instance : namingService.getAllInstances(serviceName)) {
                     if (instance.getMetadata().containsKey("clusterId")) {
                         if (clusterId.equals(instance.getMetadata().get("clusterId"))) {

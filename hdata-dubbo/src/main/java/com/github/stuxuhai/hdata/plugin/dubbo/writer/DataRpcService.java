@@ -349,7 +349,7 @@ public class DataRpcService implements RpcCallable {
             NacosNamingService namingService = new NacosNamingService(address);
             List<Instance> list = new ArrayList<>();
 
-            if (StringUtils.isNotEmpty(clusterId)) {
+            if (StringUtils.isNotEmpty(clusterId) && !"null".equalsIgnoreCase(clusterId)) {
                 for (Instance instance : namingService.getAllInstances(serviceName)) {
                     if (instance.getMetadata().containsKey("clusterId")) {
                         if (clusterId.equals(instance.getMetadata().get("clusterId"))) {
@@ -359,9 +359,10 @@ public class DataRpcService implements RpcCallable {
                 }
             } else {
                 list = namingService.getAllInstances(serviceName);
+                logger.info("cluster id is null, select a random instance from all available, all instances size is: " + list.size());
             }
 
-            if (list != null && list.size() > 0) {
+            if (list.size() > 0) {
                 int index = ThreadLocalRandom.current().nextInt(list.size());
                 Instance instance = list.get(index);
                 return instance.getIp() + ":" + instance.getPort();
