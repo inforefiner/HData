@@ -86,14 +86,16 @@ public class JDBCIterator {
 
             String currentSql = sql;
 
-            if (splitColumn != null && !splitColumn.isEmpty() && !JdbcUtils.isSqlServer(driver)) {
-                currentSql += " ORDER BY " + splitColumn;
-            }
+//            if (splitColumn != null && !splitColumn.isEmpty() && !JdbcUtils.isSqlServer(driver)) {
+//                currentSql += " ORDER BY " + splitColumn;
+//            }
 
             String pagingSql = "";
 
             if (JdbcUtils.isOracle(driver)) {
                 pagingSql = "SELECT " + selectColumn + " FROM ( SELECT ROWNUM AS RN, T.* FROM (" + currentSql.replace(JDBCSplitter.CONDITIONS, condition) + ") T WHERE ROWNUM <= " + tempEnd + ") T2 WHERE T2.RN > " + tempStart;
+//                String sql = currentSql.replace(JDBCSplitter.CONDITIONS, condition).replace("SELECT", "SELECT ROWNUM AS RN,") + " AND ROWNUM <= " + tempEnd;
+//                pagingSql = "SELECT " + selectColumn + " FROM ( " + sql + ") T2 WHERE T2.RN > " + tempStart;
             } else if (JdbcUtils.isDB2(driver)) {
                 pagingSql = "SELECT " + selectColumn + " FROM (" + currentSql.replace(JDBCSplitter.CONDITIONS, condition) + ") WHERE RN > " + tempStart + " and RN <= " + tempEnd;
             } else if (JdbcUtils.isPG(driver)) {

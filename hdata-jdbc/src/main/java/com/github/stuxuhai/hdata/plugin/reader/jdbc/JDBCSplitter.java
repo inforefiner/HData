@@ -69,14 +69,15 @@ public class JDBCSplitter extends Splitter {
 
     private void getCursorValue(String driver, String cursorType, String cursorVal, StringBuilder where) {
         if (this.isDateTimeType(cursorType)) {
-            if (cursorVal.length() > 19) {
-                cursorVal = cursorVal.substring(0, 19);
-            }
-            if (JdbcUtils.isOracle(driver)) {
+//            if (cursorVal.length() > 19) {
+//                cursorVal = cursorVal.substring(0, 19);
+//            }
+            if (JdbcUtils.isOracle(driver) && cursorVal.length() > 19) {
+                where.append("TO_TIMESTAMP('" + cursorVal + "','yyyy-mm-dd HH24:MI:SS.ff','NLS_DATE_LANGUAGE = American')");
+            } else if (JdbcUtils.isOracle(driver) && cursorVal.length() <= 19) {
                 where.append("TO_DATE('" + cursorVal + "','yyyy-mm-dd HH24:MI:SS','NLS_DATE_LANGUAGE = American')");
-
             } else if (JdbcUtils.isSqlServer(driver)) {
-                where.append("DATEADD(SECOND, 1, '" + cursorVal + "')");
+                where.append("DATEADD(ms, 1, '" + cursorVal + "')");
             } else {
                 where.append("'" + cursorVal + "'");
             }
