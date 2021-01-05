@@ -140,33 +140,11 @@ public class HBaseWriter extends Writer {
         Put put = new Put(Bytes.toBytes(SHA256Util.getSHA256StrJava(rowkey.toString())));
         for (int i = rowkeyCol.length; i < rowkeyCol.length + columns.length; i++) {
             Object o = record.get(i);
-            if (o instanceof Clob) {
-                if (o instanceof NClob) {
-                    NClob nClob = (NClob) o;
-                    try {
-                        o = nClob.getSubString(1, (int) nClob.length());
-                    } catch (Throwable e) {
-                        o = "";
-                    }
-                } else {
-                    Clob clob = (Clob) o;
-                    try {
-                        o = clob.getSubString(1, (int) clob.length());
-                    } catch (Throwable e) {
-                        o = "";
-                    }
-                }
+            if (o instanceof byte[]) {
+                put.addColumn(Bytes.toBytes("vf"), Bytes.toBytes(columns[i - rowkeyCol.length]), (byte[]) o);
+            } else {
+                put.addColumn(Bytes.toBytes("vf"), Bytes.toBytes(columns[i - rowkeyCol.length]), Bytes.toBytes(o.toString()));
             }
-            if (o instanceof Blob) {
-                Blob blob = (Blob) o;
-                try {
-                    o = new String(blob.getBytes(1, (int) blob.length()), "UTF8");
-                } catch (Throwable e) {
-                    o = "";
-                }
-            }
-
-            put.addColumn(Bytes.toBytes("vf"), Bytes.toBytes(columns[i - rowkeyCol.length]), Bytes.toBytes(o.toString()));
         }
         put.addColumn(Bytes.toBytes("kf"), Bytes.toBytes("kf"), Bytes.toBytes(JSON.toJSON(map).toString()));
         in.incrementAndGet();

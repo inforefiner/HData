@@ -300,6 +300,7 @@ public class JdbcUtils {
 
     public static boolean isBinaryType(int sqlType) {
         switch (sqlType) {
+            case Types.BLOB:
             case Types.BINARY:
             case Types.LONGVARBINARY:
             case Types.VARBINARY:

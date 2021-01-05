@@ -161,43 +161,27 @@ public class JDBCReader extends Reader {
                 Record r = new DefaultRecord(columnCount);
                 for (int i = 1; i <= columnCount; i++) {
                     Object o = null;
-                    try {
-                        o = rs.getObject(i);
-                    } catch (Throwable e) {
-                        o = "";
-                    }
-                    if (o != null && JdbcUtils.isClobType(columnTypes[i - 1])) {
-                        Clob clob = (Clob) o;
+
+                    if (JdbcUtils.isClobType(columnTypes[i - 1])) {
+                        Clob clob = rs.getClob(i);
                         try {
                             o = clob.getSubString(1, (int) clob.length());
                         } catch (Throwable e) {
                             o = "";
                         }
-                    }
-                    if (o != null && JdbcUtils.isBlobType(columnTypes[i - 1])) {
-                        Blob blob = (Blob) o;
-                        try {
-                            o = new String(blob.getBytes(1, (int) blob.length()), StandardCharsets.UTF_8);
-                        } catch (Throwable e) {
-                            o = "";
-                        }
-                    }
-                    if (o != null && JdbcUtils.isNclobType(columnTypes[i - 1])) {
-                        NClob nClob = (NClob) o;
+                    } else if (JdbcUtils.isNclobType(columnTypes[i - 1])) {
+                        NClob nClob = rs.getNClob(i);
                         try {
                             o = nClob.getSubString(1, (int) nClob.length());
                         } catch (Throwable e) {
                             o = "";
                         }
+                    } else if (JdbcUtils.isBinaryType(columnTypes[i - 1])) {
+                        o = rs.getBytes(i);
+                    } else {
+                        o = rs.getObject(i);
                     }
-                    if (o != null && JdbcUtils.isBinaryType(columnTypes[i - 1])) {
-                        byte[] bytes = rs.getBytes(i);
-                        try {
-                            o = new String(bytes, StandardCharsets.UTF_8);
-                        } catch (Throwable e) {
-                            o = "";
-                        }
-                    }
+
                     if (o == null && nullString != null && JdbcUtils.isStringType(columnTypes[i - 1])) {
                         r.add(i - 1, nullString);
                     } else if (o == null && nullNonString != null && !JdbcUtils.isStringType(columnTypes[i - 1])) {

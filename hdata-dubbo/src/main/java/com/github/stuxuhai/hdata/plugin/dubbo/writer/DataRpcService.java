@@ -174,8 +174,11 @@ public class DataRpcService implements RpcCallable {
         isClosed = true;
         if (dataService != null) {
             if (eventQueue != null && !eventQueue.isClosed()) {
-                int toRead = writePointer.get() - readPointer.get();
-                if (toRead > 0) {
+//                int toRead = writePointer.get() - readPointer.get();
+//                if (toRead > 0) {
+//                    flushData();
+//                }
+                while (writePointer.get() - readPointer.get() > 0) {
                     flushData();
                 }
 
